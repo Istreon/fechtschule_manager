@@ -2,6 +2,8 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import sqlite3
 import datetime
+import csv
+import threading
 
 # --- Base de donnees ---
 conn = sqlite3.connect("tournoi.db")
@@ -59,6 +61,7 @@ def ajouter_participant():
         entry_prenom.delete(0, tk.END)
         entry_nom.delete(0, tk.END)
         rafraichir_listes()
+        rafraichir_rencontres()
     else:
         messagebox.showwarning("Champs manquants", "Veuillez remplir le prénom et le nom.")
 
@@ -68,8 +71,6 @@ ttk.Button(frame_participant, text="Ajouter", command=ajouter_participant).grid(
 frame_rencontre = ttk.LabelFrame(root, text="Enregistrer une rencontre")
 frame_rencontre.grid(row=1, column=0, padx=10, pady=10, sticky="ew")
 
-list_participants = []
-
 combattant1_var = tk.StringVar()
 combattant2_var = tk.StringVar()
 arbitre_var = tk.StringVar()
@@ -77,6 +78,23 @@ assesseur_var = tk.StringVar()
 categorie_var = tk.StringVar(value=CATEGORIES[0])
 score1_var = tk.IntVar(value=0)
 score2_var = tk.IntVar(value=0)
+
+def filtrer_listes(*args):
+    selection = set()
+    for var in [combattant1_var, combattant2_var, arbitre_var, assesseur_var]:
+        try:
+            selection.add(int(var.get().split(" - ")[0]))
+        except:
+            pass
+
+    c.execute("SELECT id, prenom, nom FROM participants")
+    participants = c.fetchall()
+    liste = [f"{id} - {prenom} {nom}" for id, prenom, nom in participants if id not in selection or f"{id} - {prenom} {nom}" == combattant1_var.get() or f"{id} - {prenom} {nom}" == combattant2_var.get() or f"{id} - {prenom} {nom}" == arbitre_var.get() or f"{id} - {prenom} {nom}" == assesseur_var.get()]
+
+    combo_combattant1["values"] = liste
+    combo_combattant2["values"] = liste
+    combo_arbitre["values"] = liste
+    combo_assesseur["values"] = liste
 
 ttk.Label(frame_rencontre, text="Combattant 1").grid(row=0, column=0)
 combo_combattant1 = ttk.Combobox(frame_rencontre, textvariable=combattant1_var)
@@ -93,6 +111,9 @@ combo_arbitre.grid(row=2, column=1)
 ttk.Label(frame_rencontre, text="Assesseur").grid(row=3, column=0)
 combo_assesseur = ttk.Combobox(frame_rencontre, textvariable=assesseur_var)
 combo_assesseur.grid(row=3, column=1)
+
+for var in [combattant1_var, combattant2_var, arbitre_var, assesseur_var]:
+    var.trace_add("write", filtrer_listes)
 
 ttk.Label(frame_rencontre, text="Catégorie").grid(row=4, column=0)
 combo_categorie = ttk.Combobox(frame_rencontre, textvariable=categorie_var, values=CATEGORIES)
@@ -116,6 +137,11 @@ def enregistrer_rencontre():
         s1 = score1_var.get()
         s2 = score2_var.get()
 
+        ids = [id1, id2, arbitre, assesseur]
+        if len(set(ids)) < 4:
+            messagebox.showerror("Erreur", "Un participant ne peut apparaître qu'une seule fois dans une rencontre.")
+            return
+
         if s1 != 0 and s2 != 0:
             messagebox.showerror("Erreur", "Un seul score peut être non nul !")
             return
@@ -126,12 +152,68 @@ def enregistrer_rencontre():
         """, (id1, id2, arbitre, assesseur, cat, s1, s2, datetime.datetime.now().isoformat()))
         conn.commit()
         messagebox.showinfo("Succès", "Rencontre enregistrée !")
+        rafraichir_rencontres()
     except Exception as e:
         messagebox.showerror("Erreur", str(e))
 
 ttk.Button(frame_rencontre, text="Enregistrer", command=enregistrer_rencontre).grid(row=7, column=0, columnspan=2, pady=5)
 
+# Frame pour afficher les rencontres
+frame_liste = ttk.LabelFrame(root, text="Rencontres enregistrées")
+frame_liste.grid(row=2, column=0, padx=10, pady=10, sticky="ew")
+
+entry_recherche = ttk.Entry(frame_liste)
+entry_recherche.pack(pady=5)
+
+liste_rencontres = tk.Listbox(frame_liste, width=100)
+liste_rencontres.pack(padx=5, pady=5)
+
+def rafraichir_rencontres(filtre=""):
+    liste_rencontres.delete(0, tk.END)
+    c.execute("""
+        SELECT r.id, p1.prenom || ' ' || p1.nom, p2.prenom || ' ' || p2.nom,
+               arb.prenom || ' ' || arb.nom, ass.prenom || ' ' || ass.nom,
+               r.score1, r.score2, r.categorie, r.date
+        FROM rencontres r
+        JOIN participants p1 ON r.combattant1 = p1.id
+        JOIN participants p2 ON r.combattant2 = p2.id
+        JOIN participants arb ON r.arbitre = arb.id
+        JOIN participants ass ON r.assesseur = ass.id
+        ORDER BY r.date DESC
+    """)
+    for row in c.fetchall():
+        ligne = f"{row[8][:16]} - {row[1]} ({row[5]}) vs {row[2]} ({row[6]}) [{row[7]}] - Arbitre: {row[3]}, Assesseur: {row[4]}"
+        if filtre.lower() in ligne.lower():
+            liste_rencontres.insert(tk.END, ligne)
+
+def rechercher_rencontres(event):
+    texte = entry_recherche.get()
+    rafraichir_rencontres(texte)
+
+entry_recherche.bind("<KeyRelease>", rechercher_rencontres)
+
+def exporter_csv():
+    with open("rencontres.csv", "w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerow(["Date", "Combattant 1", "Score 1", "Combattant 2", "Score 2", "Catégorie", "Arbitre", "Assesseur"])
+        c.execute("""
+            SELECT p1.prenom || ' ' || p1.nom, p2.prenom || ' ' || p2.nom,
+                   arb.prenom || ' ' || arb.nom, ass.prenom || ' ' || ass.nom,
+                   r.score1, r.score2, r.categorie, r.date
+            FROM rencontres r
+            JOIN participants p1 ON r.combattant1 = p1.id
+            JOIN participants p2 ON r.combattant2 = p2.id
+            JOIN participants arb ON r.arbitre = arb.id
+            JOIN participants ass ON r.assesseur = ass.id
+        """)
+        for row in c.fetchall():
+            writer.writerow([row[7], row[0], row[4], row[1], row[5], row[6], row[2], row[3]])
+    messagebox.showinfo("Export", "Export CSV terminé : rencontres.csv")
+
+ttk.Button(frame_liste, text="Exporter en CSV", command=exporter_csv).pack(pady=5)
+
 # Mise à jour des listes déroulantes
+
 def rafraichir_listes():
     c.execute("SELECT id, prenom, nom FROM participants")
     participants = [f"{row[0]} - {row[1]} {row[2]}" for row in c.fetchall()]
@@ -141,6 +223,15 @@ def rafraichir_listes():
     combo_assesseur["values"] = participants
 
 rafraichir_listes()
+rafraichir_rencontres()
+
+# Sauvegarde automatique
+
+def sauvegarde_auto():
+    conn.commit()
+    root.after(30000, sauvegarde_auto)  # toutes les 30 secondes
+
+sauvegarde_auto()
 
 root.mainloop()
 
