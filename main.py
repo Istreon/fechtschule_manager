@@ -5,10 +5,11 @@ import datetime
 import csv
 import threading
 
-# --- Base de donnees ---
+# --- Data base ---
 conn = sqlite3.connect("tournoi.db")
 c = conn.cursor()
 
+# "Participants" data base
 c.execute("""
 CREATE TABLE IF NOT EXISTS participants (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -17,6 +18,7 @@ CREATE TABLE IF NOT EXISTS participants (
 )
 """)
 
+# "Rencontres" data base
 c.execute("""
 CREATE TABLE IF NOT EXISTS rencontres (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -33,7 +35,7 @@ CREATE TABLE IF NOT EXISTS rencontres (
 
 conn.commit()
 
-# --- Données ---
+# --- Weapon categories ---
 CATEGORIES = ["Épée longue", "Sabre", "Épée de côté", "Épée courte" ,"Rapière", "Deux armes", "Dussack","Canne", "Lance/Pertuisane", "Hallebarde/Guisarme", "Autre"]
 
 # --- GUI ---
@@ -87,7 +89,7 @@ def filtrer_listes(*args):
         except:
             pass
 
-    c.execute("SELECT id, prenom, nom FROM participants")
+    c.execute("SELECT id, prenom, nom FROM participants ORDER BY nom")
     participants = c.fetchall()
     liste = [f"{id} - {prenom} {nom}" for id, prenom, nom in participants if id not in selection or f"{id} - {prenom} {nom}" == combattant1_var.get() or f"{id} - {prenom} {nom}" == combattant2_var.get() or f"{id} - {prenom} {nom}" == arbitre_var.get() or f"{id} - {prenom} {nom}" == assesseur_var.get()]
 
@@ -119,11 +121,11 @@ ttk.Label(frame_rencontre, text="Catégorie").grid(row=4, column=0)
 combo_categorie = ttk.Combobox(frame_rencontre, textvariable=categorie_var, values=CATEGORIES)
 combo_categorie.grid(row=4, column=1)
 
-ttk.Label(frame_rencontre, text="Score Combattant 1").grid(row=5, column=0)
+ttk.Label(frame_rencontre, text="Point de vie Combattant 1").grid(row=5, column=0)
 spin_score1 = ttk.Spinbox(frame_rencontre, from_=0, to=6, textvariable=score1_var)
 spin_score1.grid(row=5, column=1)
 
-ttk.Label(frame_rencontre, text="Score Combattant 2").grid(row=6, column=0)
+ttk.Label(frame_rencontre, text="Point de vie Combattant 2").grid(row=6, column=0)
 spin_score2 = ttk.Spinbox(frame_rencontre, from_=0, to=6, textvariable=score2_var)
 spin_score2.grid(row=6, column=1)
 
@@ -216,7 +218,7 @@ ttk.Button(frame_liste, text="Exporter en CSV", command=exporter_csv).pack(pady=
 
 def rafraichir_listes():
     c.execute("SELECT id, prenom, nom FROM participants ORDER BY nom")
-    participants = [f"{row[2]} {row[1]}" for row in c.fetchall()]
+    participants = [f"{row[0]} - {row[1]} {row[2]}" for row in c.fetchall()]
     combo_combattant1["values"] = participants
     combo_combattant2["values"] = participants
     combo_arbitre["values"] = participants
