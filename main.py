@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS rencontres (
 conn.commit()
 
 # --- Données ---
-CATEGORIES = ["Épée", "Sabre", "Rapière", "Autre"]
+CATEGORIES = ["Épée longue", "Sabre", "Épée de côté", "Épée courte" ,"Rapière", "Deux armes", "Dussack","Canne", "Lance/Pertuisane", "Hallebarde/Guisarme", "Autre"]
 
 # --- GUI ---
 root = tk.Tk()
@@ -215,8 +215,8 @@ ttk.Button(frame_liste, text="Exporter en CSV", command=exporter_csv).pack(pady=
 # Mise à jour des listes déroulantes
 
 def rafraichir_listes():
-    c.execute("SELECT id, prenom, nom FROM participants")
-    participants = [f"{row[0]} - {row[1]} {row[2]}" for row in c.fetchall()]
+    c.execute("SELECT id, prenom, nom FROM participants ORDER BY nom")
+    participants = [f"{row[2]} {row[1]}" for row in c.fetchall()]
     combo_combattant1["values"] = participants
     combo_combattant2["values"] = participants
     combo_arbitre["values"] = participants
