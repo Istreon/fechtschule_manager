@@ -132,7 +132,7 @@ frame_liste.grid(row=2, column=0, padx=10, pady=10, sticky="ew")
 entry_recherche = ttk.Entry(frame_liste)
 entry_recherche.pack(pady=5)
 
-liste_rencontres = tk.Listbox(frame_liste, width=100)
+liste_rencontres = tk.Listbox(frame_liste, width=150)
 liste_rencontres.pack(padx=5, pady=5)
 
 def rafraichir_rencontres(filtre=""):
@@ -171,5 +171,4 @@ rafraichir_rencontres()
 
 root.mainloop()
 
-db.close()
-db=None
+db=None # Close data base connection by calling __del__ method

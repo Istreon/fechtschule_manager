@@ -35,7 +35,7 @@ class DataBase :
             """)
 
     def __del__(self):
-        self.close()
+        self.conn.close() # Closes the connection when the object is no longer referenced
     
     def addParticipant(self, prenom: str, nom: str):
         with self.conn:
@@ -83,6 +83,3 @@ class DataBase :
             """)
             for row in self.cursor.fetchall():
                 writer.writerow([row[7], row[0], row[4], row[1], row[5], row[6], row[2], row[3]])
-
-    def close(self):
-        self.conn.close()
