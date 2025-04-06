@@ -83,7 +83,7 @@ class DataBase :
                 JOIN participants arb ON r.arbitre = arb.id
                 JOIN participants ass ON r.assesseur = ass.id
             """)
-            for row in self.cursos.fetchall():
+            for row in self.cursor.fetchall():
                 writer.writerow([row[7], row[0], row[4], row[1], row[5], row[6], row[2], row[3]])
 
     def commit(self):
