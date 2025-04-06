@@ -1,5 +1,14 @@
 from src.database import DataBase
 
+
+
+import math
+
+def truncate_float(value: float, decimals: int = 2) -> float:
+    factor = 10.0 ** decimals
+    return math.trunc(value * factor) / factor
+
+
 # - Le premier critère est d'afficher les combattants ayant le plus de participation en tant que combattant à des rencontres
 
 def rankingByParticipationAsFencer(db: DataBase, cat: str = "all"):
@@ -102,7 +111,7 @@ def rankingByRatioTotalLifePointsToRencontres(db: DataBase, cat: str = "all"):
         if(nbRecontres > 0 ) : 
             ratio = lifePoints / nbRecontres
 
-        res = {"id": id, "prenom": p["prenom"], "nom": p["nom"], "score": ratio}
+        res = {"id": id, "prenom": p["prenom"], "nom": p["nom"], "score": truncate_float(ratio)}
         results.append(res)
 
     sorted_results = sorted(results, key=lambda x: x["score"], reverse=True)
@@ -139,7 +148,7 @@ def rankingByRatioVictoryToDefeat(db: DataBase, cat: str = "all"):
         if(nbRecontres > 0 ) : 
             ratio = victories / nbRecontres
 
-        res = {"id": id, "prenom": p["prenom"], "nom": p["nom"], "score": ratio}
+        res = {"id": id, "prenom": p["prenom"], "nom": p["nom"], "score": truncate_float(ratio*100,1)}
         results.append(res)
 
     sorted_results = sorted(results, key=lambda x: x["score"], reverse=True)
