@@ -36,7 +36,8 @@ class DataBase :
 
     def __del__(self):
         self.conn.close() # Closes the connection when the object is no longer referenced
-    
+
+#region Methods - Add queries
     def addParticipant(self, prenom: str, nom: str):
         with self.conn:
             self.conn.execute("INSERT INTO participants (prenom, nom) VALUES (?, ?)", (prenom, nom))
@@ -47,12 +48,21 @@ class DataBase :
                 INSERT INTO rencontres (combattant1, combattant2, arbitre, assesseur, categorie, score1, score2, date)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """, (id1, id2, arbitre, assesseur, cat, s1, s2, datetime.datetime.now().isoformat()))
+#endregion
 
-
+#region Methods - Getters
     def getParticipants(self):
         self.cursor.execute("SELECT id, prenom, nom FROM participants ORDER BY nom")
-        return self.cursor.fetchall()
+        res = self.cursor.fetchall()
 
+        # Convert the result of the sql query into a dictionary
+        colonnes = ["id", "prenom", "nom"]
+        participants = [dict(zip(colonnes, row)) for row in res]
+
+        return participants
+   
+    
+    
     def getRencontres(self):
         self.cursor.execute("""
         SELECT r.id, p1.id, p1.prenom || ' ' || p1.nom, p2.id, p2.prenom || ' ' || p2.nom,
@@ -65,7 +75,21 @@ class DataBase :
         JOIN participants ass ON r.assesseur = ass.id
         ORDER BY r.date DESC
         """)
-        return self.cursor.fetchall()
+        res = self.cursor.fetchall()
+
+        # Convert the result of the sql query into a dictionary
+        colonnes = [
+        "id_rencontre", 
+        "id_combattant1", "nom_combattant1",
+        "id_combattant2", "nom_combattant2",
+        "id_arbitre", "nom_arbitre",
+        "id_assesseur", "nom_assesseur",
+        "score1", "score2", "categorie", "date"
+        ]
+        rencontres = [dict(zip(colonnes, row)) for row in res]
+        return rencontres
+#endregion
+
     
     def exporter_csv(self):
         with open("rencontres.csv", "w", newline="", encoding="utf-8") as f:
