@@ -55,8 +55,8 @@ class DataBase :
 
     def getRencontres(self):
         self.cursor.execute("""
-        SELECT r.id, p1.prenom || ' ' || p1.nom, p2.prenom || ' ' || p2.nom,
-               arb.prenom || ' ' || arb.nom, ass.prenom || ' ' || ass.nom,
+        SELECT r.id, p1.id, p1.prenom || ' ' || p1.nom, p2.id, p2.prenom || ' ' || p2.nom,
+               arb.id, arb.prenom || ' ' || arb.nom, ass.id, ass.prenom || ' ' || ass.nom,
                r.score1, r.score2, r.categorie, r.date
         FROM rencontres r
         JOIN participants p1 ON r.combattant1 = p1.id

@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 from src.database import DataBase
+from src.ranking import *
 
 db = DataBase()
 
@@ -139,7 +140,7 @@ def rafraichir_rencontres(filtre=""):
     liste_rencontres.delete(0, tk.END)
     rencontres = db.getRencontres()
     for row in rencontres:
-        ligne = f"{row[8][:16]} - {row[1]} ({row[5]}) vs {row[2]} ({row[6]}) [{row[7]}] - Arbitre: {row[3]}, Assesseur: {row[4]}"
+        ligne = f"{row[12][:16]} - {row[2]} ({row[9]}) vs {row[4]} ({row[10]}) [{row[11]}] - Arbitre: {row[6]}, Assesseur: {row[8]}"
         if filtre.lower() in ligne.lower():
             liste_rencontres.insert(tk.END, ligne)
 
@@ -167,6 +168,43 @@ def rafraichir_listes():
 
 rafraichir_listes()
 rafraichir_rencontres()
+
+
+def displayRankings():
+    def displayRanking(title, data):
+            top = tk.Toplevel(root)
+            top.title(title)
+            listbox = tk.Listbox(top, width=70, height= 50)
+            listbox.pack(padx=10, pady=10)
+            count = 1
+            lastDiffPos = 1
+            lastDiff = -1
+            for d in data:
+                pos = count
+                if(d["score"] == lastDiff):
+                    pos = lastDiffPos
+                else :
+                    lastDiffPos = count
+                listbox.insert(tk.END, f"{pos} -- {d["prenom"]} {d["nom"]} ({d["score"]})")
+                count = count + 1
+                lastDiff = d["score"]
+
+    ranking_participation = rankingByParticipationAsFencer(db)
+    displayRanking("Classement par participations", ranking_participation)
+
+    ranking_referee = rankingByParticipationInRefereeing(db)
+    displayRanking("Classement par arbitrage", ranking_referee)
+
+    ranking_lifePoints = rankingByTotalLifePoints(db)
+    displayRanking("Classement par points de vie total", ranking_lifePoints)
+
+    ranking_lifePointsToParticipation = rankingByRatioTotalLifePointsToRencontres(db)
+    displayRanking("Classement par ratio point de vie / nombre de rencontres", ranking_lifePointsToParticipation)
+
+    ranking_victoriesToParticipation = rankingByRatioVictoryToDefeat(db)
+    displayRanking("Classement par victoire / nombre de rencontres", ranking_victoriesToParticipation)
+
+ttk.Button(root, text="Afficher Classements", command=displayRankings).grid(row=3, column=0, padx=10, pady=10)
 
 
 root.mainloop()
