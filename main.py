@@ -4,36 +4,10 @@ import sqlite3
 import datetime
 import csv
 import threading
+from src.database import DataBase
 
-# --- Data base ---
-conn = sqlite3.connect("tournoi.db")
-c = conn.cursor()
+db = DataBase()
 
-# "Participants" data base
-c.execute("""
-CREATE TABLE IF NOT EXISTS participants (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    nom TEXT,
-    prenom TEXT
-)
-""")
-
-# "Rencontres" data base
-c.execute("""
-CREATE TABLE IF NOT EXISTS rencontres (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    combattant1 INTEGER,
-    combattant2 INTEGER,
-    arbitre INTEGER,
-    assesseur INTEGER,
-    categorie TEXT,
-    score1 INTEGER,
-    score2 INTEGER,
-    date TEXT
-)
-""")
-
-conn.commit()
 
 # --- Weapon categories ---
 CATEGORIES = ["Épée longue", "Sabre", "Épée de côté", "Épée courte" ,"Rapière", "Deux armes", "Dussack","Canne", "Lance/Pertuisane", "Hallebarde/Guisarme", "Autre"]
@@ -58,8 +32,7 @@ def ajouter_participant():
     prenom = entry_prenom.get()
     nom = entry_nom.get()
     if prenom and nom:
-        c.execute("INSERT INTO participants (prenom, nom) VALUES (?, ?)", (prenom, nom))
-        conn.commit()
+        db.addParticipant(prenom,nom)
         entry_prenom.delete(0, tk.END)
         entry_nom.delete(0, tk.END)
         rafraichir_listes()
@@ -88,9 +61,9 @@ def filtrer_listes(*args):
             selection.add(int(var.get().split(" - ")[0]))
         except:
             pass
-
-    c.execute("SELECT id, prenom, nom FROM participants ORDER BY nom")
-    participants = c.fetchall()
+    
+    
+    participants = db.getParticipants()
     liste = [f"{id} - {prenom} {nom}" for id, prenom, nom in participants if id not in selection or f"{id} - {prenom} {nom}" == combattant1_var.get() or f"{id} - {prenom} {nom}" == combattant2_var.get() or f"{id} - {prenom} {nom}" == arbitre_var.get() or f"{id} - {prenom} {nom}" == assesseur_var.get()]
 
     combo_combattant1["values"] = liste
@@ -147,12 +120,8 @@ def enregistrer_rencontre():
         if s1 != 0 and s2 != 0:
             messagebox.showerror("Erreur", "Un seul score peut être non nul !")
             return
-
-        c.execute("""
-            INSERT INTO rencontres (combattant1, combattant2, arbitre, assesseur, categorie, score1, score2, date)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, (id1, id2, arbitre, assesseur, cat, s1, s2, datetime.datetime.now().isoformat()))
-        conn.commit()
+        
+        db.addRencontre(id1, id2, arbitre, assesseur, cat, s1, s2)
         messagebox.showinfo("Succès", "Rencontre enregistrée !")
         rafraichir_rencontres()
     except Exception as e:
@@ -172,18 +141,8 @@ liste_rencontres.pack(padx=5, pady=5)
 
 def rafraichir_rencontres(filtre=""):
     liste_rencontres.delete(0, tk.END)
-    c.execute("""
-        SELECT r.id, p1.prenom || ' ' || p1.nom, p2.prenom || ' ' || p2.nom,
-               arb.prenom || ' ' || arb.nom, ass.prenom || ' ' || ass.nom,
-               r.score1, r.score2, r.categorie, r.date
-        FROM rencontres r
-        JOIN participants p1 ON r.combattant1 = p1.id
-        JOIN participants p2 ON r.combattant2 = p2.id
-        JOIN participants arb ON r.arbitre = arb.id
-        JOIN participants ass ON r.assesseur = ass.id
-        ORDER BY r.date DESC
-    """)
-    for row in c.fetchall():
+    rencontres = db.getRencontres()
+    for row in rencontres:
         ligne = f"{row[8][:16]} - {row[1]} ({row[5]}) vs {row[2]} ({row[6]}) [{row[7]}] - Arbitre: {row[3]}, Assesseur: {row[4]}"
         if filtre.lower() in ligne.lower():
             liste_rencontres.insert(tk.END, ligne)
@@ -195,21 +154,7 @@ def rechercher_rencontres(event):
 entry_recherche.bind("<KeyRelease>", rechercher_rencontres)
 
 def exporter_csv():
-    with open("rencontres.csv", "w", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        writer.writerow(["Date", "Combattant 1", "Score 1", "Combattant 2", "Score 2", "Catégorie", "Arbitre", "Assesseur"])
-        c.execute("""
-            SELECT p1.prenom || ' ' || p1.nom, p2.prenom || ' ' || p2.nom,
-                   arb.prenom || ' ' || arb.nom, ass.prenom || ' ' || ass.nom,
-                   r.score1, r.score2, r.categorie, r.date
-            FROM rencontres r
-            JOIN participants p1 ON r.combattant1 = p1.id
-            JOIN participants p2 ON r.combattant2 = p2.id
-            JOIN participants arb ON r.arbitre = arb.id
-            JOIN participants ass ON r.assesseur = ass.id
-        """)
-        for row in c.fetchall():
-            writer.writerow([row[7], row[0], row[4], row[1], row[5], row[6], row[2], row[3]])
+    db.exporter_csv()
     messagebox.showinfo("Export", "Export CSV terminé : rencontres.csv")
 
 ttk.Button(frame_liste, text="Exporter en CSV", command=exporter_csv).pack(pady=5)
@@ -217,8 +162,8 @@ ttk.Button(frame_liste, text="Exporter en CSV", command=exporter_csv).pack(pady=
 # Mise à jour des listes déroulantes
 
 def rafraichir_listes():
-    c.execute("SELECT id, prenom, nom FROM participants ORDER BY nom")
-    participants = [f"{row[0]} - {row[1]} {row[2]}" for row in c.fetchall()]
+    p = db.getParticipants()
+    participants = [f"{row[0]} - {row[1]} {row[2]}" for row in p]
     combo_combattant1["values"] = participants
     combo_combattant2["values"] = participants
     combo_arbitre["values"] = participants
@@ -230,11 +175,12 @@ rafraichir_rencontres()
 # Sauvegarde automatique
 
 def sauvegarde_auto():
-    conn.commit()
+    db.commit()
     root.after(30000, sauvegarde_auto)  # toutes les 30 secondes
 
 sauvegarde_auto()
 
 root.mainloop()
 
-conn.close()
+db.close()
+db=None
