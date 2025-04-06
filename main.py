@@ -1,9 +1,5 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
-import sqlite3
-import datetime
-import csv
-import threading
 from src.database import DataBase
 
 db = DataBase()
@@ -172,13 +168,6 @@ def rafraichir_listes():
 rafraichir_listes()
 rafraichir_rencontres()
 
-# Sauvegarde automatique
-
-def sauvegarde_auto():
-    db.commit()
-    root.after(30000, sauvegarde_auto)  # toutes les 30 secondes
-
-sauvegarde_auto()
 
 root.mainloop()
 

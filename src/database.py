@@ -9,51 +9,49 @@ class DataBase :
         self.cursor = self.conn.cursor()
 
         # == Tables creation if they don't exist ==
-
+        with self.conn:
         # "Participants" data base
-        self.cursor.execute(""" 
-        CREATE TABLE IF NOT EXISTS participants (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nom TEXT,
-            prenom TEXT
-        )
-        """)
+            self.conn.execute(""" 
+            CREATE TABLE IF NOT EXISTS participants (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nom TEXT,
+                prenom TEXT
+            )
+            """)
 
-        # "Rencontres" data base
-        self.cursor.execute("""
-        CREATE TABLE IF NOT EXISTS rencontres (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            combattant1 INTEGER,
-            combattant2 INTEGER,
-            arbitre INTEGER,
-            assesseur INTEGER,
-            categorie TEXT,
-            score1 INTEGER,
-            score2 INTEGER,
-            date TEXT
-        )
-        """)
-
-        self.conn.commit()
+            # "Rencontres" data base
+            self.conn.execute("""
+            CREATE TABLE IF NOT EXISTS rencontres (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                combattant1 INTEGER,
+                combattant2 INTEGER,
+                arbitre INTEGER,
+                assesseur INTEGER,
+                categorie TEXT,
+                score1 INTEGER,
+                score2 INTEGER,
+                date TEXT
+            )
+            """)
 
     def __del__(self):
         self.close()
     
     def addParticipant(self, prenom: str, nom: str):
-        self.cursor.execute("INSERT INTO participants (prenom, nom) VALUES (?, ?)", (prenom, nom))
-        self.conn.commit()
+        with self.conn:
+            self.conn.execute("INSERT INTO participants (prenom, nom) VALUES (?, ?)", (prenom, nom))
+
+    def addRencontre(self, id1: int, id2: int, arbitre: int, assesseur: int,cat: str, s1: int, s2: int):
+        with self.conn:
+            self.cursor.execute("""
+                INSERT INTO rencontres (combattant1, combattant2, arbitre, assesseur, categorie, score1, score2, date)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (id1, id2, arbitre, assesseur, cat, s1, s2, datetime.datetime.now().isoformat()))
+
 
     def getParticipants(self):
         self.cursor.execute("SELECT id, prenom, nom FROM participants ORDER BY nom")
         return self.cursor.fetchall()
-    
-
-    def addRencontre(self, id1: int, id2: int, arbitre: int, assesseur: int,cat: str, s1: int, s2: int):
-        self.cursor.execute("""
-            INSERT INTO rencontres (combattant1, combattant2, arbitre, assesseur, categorie, score1, score2, date)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, (id1, id2, arbitre, assesseur, cat, s1, s2, datetime.datetime.now().isoformat()))
-        self.conn.commit()
 
     def getRencontres(self):
         self.cursor.execute("""
@@ -85,9 +83,6 @@ class DataBase :
             """)
             for row in self.cursor.fetchall():
                 writer.writerow([row[7], row[0], row[4], row[1], row[5], row[6], row[2], row[3]])
-
-    def commit(self):
-        self.conn.commit()
 
     def close(self):
         self.conn.close()
