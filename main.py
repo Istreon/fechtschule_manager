@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from src.database import DataBase
 from src.ranking import *
+from src.gui import *
 
 db = DataBase()
 
@@ -9,9 +10,12 @@ db = DataBase()
 # --- Weapon categories ---
 CATEGORIES = ["Épée longue", "Sabre", "Épée de côté", "Épée courte" ,"Rapière", "Deux armes", "Dussack","Canne", "Lance/Pertuisane", "Hallebarde/Guisarme", "Autre"]
 
+
 # --- GUI ---
 root = tk.Tk()
-root.title("Gestion de Tournoi")
+#root.withdraw() # Hide main windows
+root.title("Fechtschule manager")
+
 
 # Frame pour ajouter un participant
 frame_participant = ttk.LabelFrame(root, text="Ajouter un participant")
@@ -32,8 +36,8 @@ def ajouter_participant():
         db.addParticipant(prenom,nom)
         entry_prenom.delete(0, tk.END)
         entry_nom.delete(0, tk.END)
-        rafraichir_listes()
-        rafraichir_rencontres()
+        refreshParticipantlists()
+        refreshMatches()
     else:
         messagebox.showwarning("Champs manquants", "Veuillez remplir le prénom et le nom.")
 
@@ -51,23 +55,6 @@ categorie_var = tk.StringVar(value=CATEGORIES[0])
 score1_var = tk.IntVar(value=0)
 score2_var = tk.IntVar(value=0)
 
-def filtrer_listes(*args):
-    selection = set()
-    for var in [combattant1_var, combattant2_var, arbitre_var, assesseur_var]:
-        try:
-            selection.add(int(var.get().split(" - ")[0]))
-        except:
-            pass
-    
-    
-    participants = db.getParticipants()
-    liste = [f"{id} - {prenom} {nom}" for id, prenom, nom in participants if id not in selection or f"{id} - {prenom} {nom}" == combattant1_var.get() or f"{id} - {prenom} {nom}" == combattant2_var.get() or f"{id} - {prenom} {nom}" == arbitre_var.get() or f"{id} - {prenom} {nom}" == assesseur_var.get()]
-
-    combo_combattant1["values"] = liste
-    combo_combattant2["values"] = liste
-    combo_arbitre["values"] = liste
-    combo_assesseur["values"] = liste
-
 ttk.Label(frame_rencontre, text="Combattant 1").grid(row=0, column=0)
 combo_combattant1 = ttk.Combobox(frame_rencontre, textvariable=combattant1_var)
 combo_combattant1.grid(row=0, column=1)
@@ -84,9 +71,6 @@ ttk.Label(frame_rencontre, text="Assesseur").grid(row=3, column=0)
 combo_assesseur = ttk.Combobox(frame_rencontre, textvariable=assesseur_var)
 combo_assesseur.grid(row=3, column=1)
 
-for var in [combattant1_var, combattant2_var, arbitre_var, assesseur_var]:
-    var.trace_add("write", filtrer_listes)
-
 ttk.Label(frame_rencontre, text="Catégorie").grid(row=4, column=0)
 combo_categorie = ttk.Combobox(frame_rencontre, textvariable=categorie_var, values=CATEGORIES)
 combo_categorie.grid(row=4, column=1)
@@ -99,7 +83,7 @@ ttk.Label(frame_rencontre, text="Point de vie Combattant 2").grid(row=6, column=
 spin_score2 = ttk.Spinbox(frame_rencontre, from_=0, to=6, textvariable=score2_var)
 spin_score2.grid(row=6, column=1)
 
-def enregistrer_rencontre():
+def registerMatch():
     try:
         id1 = int(combattant1_var.get().split(" - ")[0])
         id2 = int(combattant2_var.get().split(" - ")[0])
@@ -120,15 +104,15 @@ def enregistrer_rencontre():
         
         db.addRencontre(id1, id2, arbitre, assesseur, cat, s1, s2)
         messagebox.showinfo("Succès", "Rencontre enregistrée !")
-        rafraichir_rencontres()
+        refreshMatches()
     except Exception as e:
         messagebox.showerror("Erreur", str(e))
 
-ttk.Button(frame_rencontre, text="Enregistrer", command=enregistrer_rencontre).grid(row=7, column=0, columnspan=2, pady=5)
+ttk.Button(frame_rencontre, text="Enregistrer", command=registerMatch).grid(row=7, column=0, columnspan=2, pady=5)
 
 # Frame pour afficher les rencontres
 frame_liste = ttk.LabelFrame(root, text="Rencontres enregistrées")
-frame_liste.grid(row=2, column=0, padx=10, pady=10, sticky="ew")
+frame_liste.grid(row=1, column=1, padx=10, pady=10, sticky="ew")
 
 entry_recherche = ttk.Entry(frame_liste)
 entry_recherche.pack(pady=5)
@@ -136,17 +120,17 @@ entry_recherche.pack(pady=5)
 liste_rencontres = tk.Listbox(frame_liste, width=150)
 liste_rencontres.pack(padx=5, pady=5)
 
-def rafraichir_rencontres(filtre=""):
+def refreshMatches(filtre=""):
     liste_rencontres.delete(0, tk.END)
     rencontres = db.getRencontres()
     for row in rencontres:
-        ligne = f"{row[12][:16]} - {row[2]} ({row[9]}) vs {row[4]} ({row[10]}) [{row[11]}] - Arbitre: {row[6]}, Assesseur: {row[8]}"
+        ligne = f"{row["date"][:16]} - {row["nom_combattant1"]} ({row["score1"]}) vs {row["nom_combattant2"]} ({row["score2"]}) [{row["categorie"]}] - Arbitre: {row["nom_arbitre"]}, Assesseur: {row["nom_assesseur"]}"
         if filtre.lower() in ligne.lower():
             liste_rencontres.insert(tk.END, ligne)
 
 def rechercher_rencontres(event):
     texte = entry_recherche.get()
-    rafraichir_rencontres(texte)
+    refreshMatches(texte)
 
 entry_recherche.bind("<KeyRelease>", rechercher_rencontres)
 
@@ -158,55 +142,22 @@ ttk.Button(frame_liste, text="Exporter en CSV", command=exporter_csv).pack(pady=
 
 # Mise à jour des listes déroulantes
 
-def rafraichir_listes():
+def refreshParticipantlists():
     p = db.getParticipants()
-    participants = [f"{row[0]} - {row[1]} {row[2]}" for row in p]
+    participants = [f"{row["id"]} - {row["prenom"]} {row["nom"]}" for row in p]
     combo_combattant1["values"] = participants
     combo_combattant2["values"] = participants
     combo_arbitre["values"] = participants
     combo_assesseur["values"] = participants
 
-rafraichir_listes()
-rafraichir_rencontres()
+refreshParticipantlists()
+refreshMatches()
 
 
-def displayRankings():
-    def displayRanking(title, data):
-            top = tk.Toplevel(root)
-            top.title(title)
-            listbox = tk.Listbox(top, width=70, height= 50)
-            listbox.pack(padx=10, pady=10)
-            count = 1
-            lastDiffPos = 1
-            lastDiff = -1
-            for d in data:
-                pos = count
-                if(d["score"] == lastDiff):
-                    pos = lastDiffPos
-                else :
-                    lastDiffPos = count
-                listbox.insert(tk.END, f"{pos} -- {d["prenom"]} {d["nom"]} ({d["score"]})")
-                count = count + 1
-                lastDiff = d["score"]
-
-    ranking_participation = rankingByParticipationAsFencer(db)
-    displayRanking("Classement par participations", ranking_participation)
-
-    ranking_referee = rankingByParticipationInRefereeing(db)
-    displayRanking("Classement par arbitrage", ranking_referee)
-
-    ranking_lifePoints = rankingByTotalLifePoints(db)
-    displayRanking("Classement par points de vie total", ranking_lifePoints)
-
-    ranking_lifePointsToParticipation = rankingByRatioTotalLifePointsToRencontres(db)
-    displayRanking("Classement par ratio point de vie / nombre de rencontres", ranking_lifePointsToParticipation)
-
-    ranking_victoriesToParticipation = rankingByRatioVictoryToDefeat(db)
-    displayRanking("Classement par victoire / nombre de rencontres", ranking_victoriesToParticipation)
-
-ttk.Button(root, text="Afficher Classements", command=displayRankings).grid(row=3, column=0, padx=10, pady=10)
+RankingGUI(root,db,40)
 
 
 root.mainloop()
+
 
 db=None # Close data base connection by calling __del__ method
