@@ -154,7 +154,7 @@ refreshParticipantlists()
 refreshMatches()
 
 
-RankingGUI(root,db,40)
+RankingGUI(root,db,CATEGORIES,40)
 
 
 root.mainloop()
