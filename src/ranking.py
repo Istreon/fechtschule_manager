@@ -13,20 +13,20 @@ def truncate_float(value: float, decimals: int = 2) -> float:
 
 def rankingByParticipationAsFencer(db: DataBase, cat: str = "all"):
     participants=db.getParticipants()
-    rencontres=db.getRencontres()
+    matches=db.getMatches()
 
     results = []
 
     for p in participants :
         id = p["id"]
-        nbRencontres = 0
-        for r in rencontres :
+        nbMatches = 0
+        for r in matches :
             if cat!= "all" and r["categorie"]!= cat : 
                 continue
             if(r["id_combattant1"] == id or r["id_combattant2"] == id) :
-                nbRencontres = nbRencontres + 1
-        if(nbRencontres > 0 ) : 
-            res = {"id": id, "prenom": p["prenom"], "nom": p["nom"], "score": nbRencontres}
+                nbMatches = nbMatches + 1
+        if(nbMatches > 0 ) : 
+            res = {"id": id, "prenom": p["prenom"], "nom": p["nom"], "score": nbMatches}
             results.append(res)
 
     sorted_results = sorted(results, key=lambda x: x["score"], reverse=True)
@@ -38,20 +38,20 @@ def rankingByParticipationAsFencer(db: DataBase, cat: str = "all"):
 
 def rankingByParticipationInRefereeing(db: DataBase, cat: str = "all"):
     participants=db.getParticipants()
-    rencontres=db.getRencontres()
+    matches=db.getMatches()
 
     results = []
 
     for p in participants :
         id = p["id"]
-        nbRencontres = 0
-        for r in rencontres :
+        nbMatches = 0
+        for r in matches :
             if cat!= "all" and r["categorie"]!= cat : 
                 continue
             if(r["id_arbitre"] == id or r["id_assesseur"] == id) :
-                nbRencontres = nbRencontres + 1
-        if(nbRencontres > 0 ) : 
-            res = {"id": id, "prenom": p["prenom"], "nom": p["nom"], "score": nbRencontres}
+                nbMatches = nbMatches + 1
+        if(nbMatches > 0 ) : 
+            res = {"id": id, "prenom": p["prenom"], "nom": p["nom"], "score": nbMatches}
             results.append(res)
 
     sorted_results = sorted(results, key=lambda x: x["score"], reverse=True)
@@ -63,26 +63,26 @@ def rankingByParticipationInRefereeing(db: DataBase, cat: str = "all"):
 
 def rankingByTotalLifePoints(db: DataBase, cat: str = "all"):
     participants=db.getParticipants()
-    rencontres=db.getRencontres()
+    matches=db.getMatches()
 
     results = []
 
     for p in participants :
         id = p["id"]
         lifePoints = 0
-        nbRencontres = 0
-        for r in rencontres :
+        nbMatches = 0
+        for r in matches :
             if cat!= "all" and r["categorie"]!= cat : 
                 continue
             if(r["id_combattant1"] == id) :
                 lifePoints = lifePoints + r["score1"]
-                nbRencontres = nbRencontres + 1
+                nbMatches = nbMatches + 1
                 
             if(r["id_combattant2"] == id) :
                 lifePoints = lifePoints + r["score2"]
-                nbRencontres = nbRencontres + 1
+                nbMatches = nbMatches + 1
 
-        if(nbRencontres > 0 ) : 
+        if(nbMatches > 0 ) : 
             res = {"id": id, "prenom": p["prenom"], "nom": p["nom"], "score": lifePoints}
             results.append(res)
 
@@ -94,28 +94,28 @@ def rankingByTotalLifePoints(db: DataBase, cat: str = "all"):
 
 def rankingByRatioTotalLifePointsToRencontres(db: DataBase, cat: str = "all"):
     participants=db.getParticipants()
-    rencontres=db.getRencontres()
+    matches=db.getMatches()
 
     results = []
 
     for p in participants :
         id = p["id"]
         lifePoints = 0
-        nbRencontres = 0
-        for r in rencontres :
+        nbMatches = 0
+        for r in matches :
             if cat!= "all" and r["categorie"]!= cat : 
                 continue
             if(r["id_combattant1"] == id) :
                 lifePoints = lifePoints + r["score1"]
-                nbRencontres = nbRencontres + 1
+                nbMatches = nbMatches + 1
                 
             if(r["id_combattant2"] == id) :
                 lifePoints = lifePoints + r["score2"]
-                nbRencontres = nbRencontres + 1
+                nbMatches = nbMatches + 1
 
         ratio = 0
-        if(nbRencontres > 0 ) : 
-            ratio = lifePoints / nbRencontres
+        if(nbMatches > 0 ) : 
+            ratio = lifePoints / nbMatches
             res = {"id": id, "prenom": p["prenom"], "nom": p["nom"], "score": truncate_float(ratio)}
             results.append(res)
 
@@ -127,31 +127,31 @@ def rankingByRatioTotalLifePointsToRencontres(db: DataBase, cat: str = "all"):
 # - Le critère suivant et le ratio victoire/défaite (sachant que le score 0 vaut une défaite, et le score > 0 une victoire)
 def rankingByRatioVictoryToDefeat(db: DataBase, cat: str = "all"):
     participants=db.getParticipants()
-    rencontres=db.getRencontres()
+    matches=db.getMatches()
 
     results = []
 
     for p in participants :
         id = p["id"]
         victories = 0
-        nbRencontres = 0
-        for r in rencontres :
+        nbMatches = 0
+        for r in matches :
             if cat!= "all" and r["categorie"]!= cat : 
                 continue
             if(r["id_combattant1"] == id) :
-                nbRencontres = nbRencontres + 1
+                nbMatches = nbMatches + 1
                 if(r["score1"] > 0):
                     victories = victories + 1
                 
                 
             if(r["id_combattant2"] == id) :
-                nbRencontres = nbRencontres + 1
+                nbMatches = nbMatches + 1
                 if(r["score2"] > 0):
                     victories = victories + 1
 
         ratio = 0
-        if(nbRencontres > 0 ) : 
-            ratio = victories / nbRencontres
+        if(nbMatches > 0 ) : 
+            ratio = victories / nbMatches
             res = {"id": id, "prenom": p["prenom"], "nom": p["nom"], "score": truncate_float(ratio*100,1)}
             results.append(res)
 

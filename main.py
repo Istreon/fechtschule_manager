@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
-from src.database import DataBase
+from src.database import DataBase, CategoryAlreadyExists
 from src.ranking import *
 from src.gui import *
 
@@ -43,15 +43,43 @@ def ajouter_participant():
 
 ttk.Button(frame_participant, text="Ajouter", command=ajouter_participant).grid(row=2, column=0, columnspan=2, pady=5)
 
+
+
+# Frame pour ajouter une categorie
+frame_category = ttk.LabelFrame(root, text="Ajouter un style de combat")
+frame_category.grid(row=0, column=1, padx=10, pady=10, sticky="ew")
+
+ttk.Label(frame_category, text="Nom").grid(row=0, column=0)
+entry_catname = ttk.Entry(frame_category)
+entry_catname.grid(row=0, column=1)
+
+def addCategory():
+    catName = entry_catname.get()
+    if catName :
+        try:
+            db.addCategory(catName)
+        except CategoryAlreadyExists as e:
+            messagebox.showinfo("Doublon", str(e))
+        entry_catname.delete(0, tk.END)
+        refreshCategoriesLists()
+    else:
+        messagebox.showwarning("Champs manquants", "Veuillez remplir le nom.")
+
+ttk.Button(frame_category, text="Ajouter", command=addCategory).grid(row=1, column=0, columnspan=2, pady=5)
+
+
+
 # Frame pour enregistrer une rencontre
 frame_rencontre = ttk.LabelFrame(root, text="Enregistrer une rencontre")
 frame_rencontre.grid(row=1, column=0, padx=10, pady=10, sticky="ew")
+
+categories = db.getCategories()
 
 combattant1_var = tk.StringVar()
 combattant2_var = tk.StringVar()
 arbitre_var = tk.StringVar()
 assesseur_var = tk.StringVar()
-categorie_var = tk.StringVar(value=CATEGORIES[0])
+categorie_var = tk.StringVar(value=categories[0]["name"])
 score1_var = tk.IntVar(value=0)
 score2_var = tk.IntVar(value=0)
 
@@ -72,7 +100,7 @@ combo_assesseur = ttk.Combobox(frame_rencontre, textvariable=assesseur_var)
 combo_assesseur.grid(row=3, column=1)
 
 ttk.Label(frame_rencontre, text="Catégorie").grid(row=4, column=0)
-combo_categorie = ttk.Combobox(frame_rencontre, textvariable=categorie_var, values=CATEGORIES)
+combo_categorie = ttk.Combobox(frame_rencontre, textvariable=categorie_var)
 combo_categorie.grid(row=4, column=1)
 
 ttk.Label(frame_rencontre, text="Point de vie Combattant 1").grid(row=5, column=0)
@@ -102,7 +130,7 @@ def registerMatch():
             messagebox.showerror("Erreur", "Un seul score peut être non nul !")
             return
         
-        db.addRencontre(id1, id2, arbitre, assesseur, cat, s1, s2)
+        db.addMatch(id1, id2, arbitre, assesseur, cat, s1, s2)
         messagebox.showinfo("Succès", "Rencontre enregistrée !")
         refreshMatches()
     except Exception as e:
@@ -122,7 +150,7 @@ liste_rencontres.pack(padx=5, pady=5)
 
 def refreshMatches(filtre=""):
     liste_rencontres.delete(0, tk.END)
-    rencontres = db.getRencontres()
+    rencontres = db.getMatches()
     for row in rencontres:
         ligne = f"{row["date"][:16]} - {row["nom_combattant1"]} ({row["score1"]}) vs {row["nom_combattant2"]} ({row["score2"]}) [{row["categorie"]}] - Arbitre: {row["nom_arbitre"]}, Assesseur: {row["nom_assesseur"]}"
         if filtre.lower() in ligne.lower():
@@ -141,6 +169,11 @@ def exporter_csv():
 ttk.Button(frame_liste, text="Exporter en CSV", command=exporter_csv).pack(pady=5)
 
 # Mise à jour des listes déroulantes
+def refreshCategoriesLists():
+    categories = db.getCategories()
+    cat_list = [f"{row["name"]}" for row in categories]
+    combo_categorie["value"] = cat_list
+
 
 def refreshParticipantlists():
     p = db.getParticipants()
@@ -152,9 +185,10 @@ def refreshParticipantlists():
 
 refreshParticipantlists()
 refreshMatches()
+refreshCategoriesLists()
 
 
-RankingGUI(root,db,CATEGORIES,40)
+RankingGUI(root,db,40)
 
 
 root.mainloop()
