@@ -1,8 +1,11 @@
 import tkinter as tk
-from tkinter import ttk
-from src.database import DataBase
+from tkinter import ttk, messagebox
+from src.database import DataBase, CategoryAlreadyExists
 from src.ranking import *
 
+#=====================================================#
+#======================== GUI ========================#
+#=====================================================#
 
 global comboBox_participants
 comboBox_participants = []
@@ -10,11 +13,199 @@ comboBox_participants = []
 global comboBox_categories
 comboBox_categories = []
 
+global listBox_matches
+listBox_matches = []
+
+def refreshParticipantlists(db: DataBase):
+    p = db.getParticipants()
+    participants = [f"{row["id"]} - {row["prenom"]} {row["nom"]}" for row in p]
+    for cbp in comboBox_participants:
+        cbp["values"] = participants
+
+def refreshCategoriesLists(db: DataBase):
+    categories = db.getCategories()
+    cat_list = [f"{row["name"]}" for row in categories]
+    for cbc in comboBox_categories:
+        cbc["value"] = cat_list
+
+def GUI(db: DataBase):
+    root = tk.Tk()
+    root.title("Fechtschule manager")
+
+    
+    ManagerGUI(root,db)
+    RankingGUI(root,db,40)
+
+
+    refreshParticipantlists(db)
+    refreshMatches(db)
+    refreshCategoriesLists(db)
+
+    root.mainloop()
+
+
+
+#=====================================================#
+#==================== MANAGER GUI ====================#
+#=====================================================#
+
+def refreshMatches(db: DataBase, filtre=""):
+    for l in listBox_matches:
+        l.delete(0, tk.END)
+        rencontres = db.getMatches()
+        for row in rencontres:
+            ligne = f"{row["date"][:16]} - {row["nom_combattant1"]} ({row["score1"]}) vs {row["nom_combattant2"]} ({row["score2"]}) [{row["categorie"]}] - Arbitre: {row["nom_arbitre"]}, Assesseur: {row["nom_assesseur"]}"
+            if filtre.lower() in ligne.lower():
+                l.insert(tk.END, ligne)
 
 def ManagerGUI(root: tk.Tk,db: DataBase):
+    AddParticipantFrame(root,db,0,0)
+    AddCategoryFrame(root,db,0,1)
+    AddMatchFrame(root,db,1,0)
+    ShowMatchesFrame(root,db,1,1)
     return
 
 
+def AddParticipantFrame(root: tk.Tk,db: DataBase, row: int, column: int) :
+    # Frame creation
+    frame_participant = ttk.LabelFrame(root, text="Ajouter un participant")
+    frame_participant.grid(row=row, column=column, padx=10, pady=10, sticky="ew")
+
+    # Text input creation
+    ttk.Label(frame_participant, text="Prénom").grid(row=0, column=0)
+    entry_prenom = ttk.Entry(frame_participant)
+    entry_prenom.grid(row=0, column=1)
+
+    # Button creation (function and button)
+    ttk.Label(frame_participant, text="Nom").grid(row=1, column=0)
+    entry_nom = ttk.Entry(frame_participant)
+    entry_nom.grid(row=1, column=1)
+
+    def ajouter_participant():
+        prenom = entry_prenom.get()
+        nom = entry_nom.get()
+        if prenom and nom:
+            db.addParticipant(prenom,nom)
+            entry_prenom.delete(0, tk.END)
+            entry_nom.delete(0, tk.END)
+            refreshParticipantlists()
+            refreshMatches()
+        else:
+            messagebox.showwarning("Champs manquants", "Veuillez remplir le prénom et le nom.")
+
+    ttk.Button(frame_participant, text="Ajouter", command=ajouter_participant).grid(row=2, column=0, columnspan=2, pady=5)
+
+
+def AddCategoryFrame(root: tk.Tk,db: DataBase, row: int, column: int):
+    # Frame creation
+    frame_category = ttk.LabelFrame(root, text="Ajouter un style de combat")
+    frame_category.grid(row=row, column=column, padx=10, pady=10, sticky="ew")
+
+    # Text input creation
+    ttk.Label(frame_category, text="Nom").grid(row=0, column=0)
+    entry_catname = ttk.Entry(frame_category)
+    entry_catname.grid(row=0, column=1)
+
+    # Button creation (function and button)
+    def addCategory():
+        catName = entry_catname.get()
+        if catName :
+            try:
+                db.addCategory(catName)
+            except CategoryAlreadyExists as e:
+                messagebox.showinfo("Doublon", str(e))
+            entry_catname.delete(0, tk.END)
+            refreshCategoriesLists()
+        else:
+            messagebox.showwarning("Champs manquants", "Veuillez remplir le nom.")
+
+    ttk.Button(frame_category, text="Ajouter", command=addCategory).grid(row=1, column=0, columnspan=2, pady=5)
+
+
+def AddMatchFrame(root: tk.Tk,db: DataBase, row: int, column: int):
+    # Frame creation
+    frame_rencontre = ttk.LabelFrame(root, text="Enregistrer une rencontre")
+    frame_rencontre.grid(row=row, column=column, padx=10, pady=10, sticky="ew")
+
+    # Participants entries
+    requiredParticipants = ["Combattant 1","Combattant 2","Arbitre","Assesseur"]
+    i = 0
+    for s in requiredParticipants :
+        ttk.Label(frame_rencontre, text=s).grid(row=i, column=0)
+        combo = ttk.Combobox(frame_rencontre, textvariable=tk.StringVar())
+        combo.grid(row=i, column=1)
+        comboBox_participants.append(combo)
+        i = i + 1
+
+    # Category entry
+    categories = db.getCategories()
+    categorie_var = tk.StringVar(value=categories[0]["name"])
+    ttk.Label(frame_rencontre, text="Catégorie").grid(row=4, column=0)
+    combo_categorie = ttk.Combobox(frame_rencontre, textvariable=categorie_var)
+    combo_categorie.grid(row=4, column=1)
+    comboBox_categories.append(combo_categorie)
+    # Score entries
+    score1_var = tk.IntVar(value=0)
+    ttk.Label(frame_rencontre, text="Point de vie Combattant 1").grid(row=5, column=0)
+    spin_score1 = ttk.Spinbox(frame_rencontre, from_=0, to=6, textvariable=score1_var)
+    spin_score1.grid(row=5, column=1)
+
+    score2_var = tk.IntVar(value=0)
+    ttk.Label(frame_rencontre, text="Point de vie Combattant 2").grid(row=6, column=0)
+    spin_score2 = ttk.Spinbox(frame_rencontre, from_=0, to=6, textvariable=score2_var)
+    spin_score2.grid(row=6, column=1)
+
+    def registerMatch():
+        try:
+            id1 = int(comboBox_participants[0].get().split(" - ")[0])
+            id2 = int(comboBox_participants[1].get().split(" - ")[0])
+            arbitre = int(comboBox_participants[2].get().split(" - ")[0])
+            assesseur = int(comboBox_participants[3].get().split(" - ")[0])
+            cat = categorie_var.get()
+            s1 = score1_var.get()
+            s2 = score2_var.get()
+
+            ids = [id1, id2, arbitre, assesseur]
+            if len(set(ids)) < 4:
+                messagebox.showerror("Erreur", "Un participant ne peut apparaître qu'une seule fois dans une rencontre.")
+                return
+
+            if s1 != 0 and s2 != 0:
+                messagebox.showerror("Erreur", "Un seul score peut être non nul !")
+                return
+            
+            db.addMatch(id1, id2, arbitre, assesseur, cat, s1, s2)
+            messagebox.showinfo("Succès", "Rencontre enregistrée !")
+            refreshMatches(db)
+        except Exception as e:
+            messagebox.showerror("Erreur", str(e))
+
+    ttk.Button(frame_rencontre, text="Enregistrer", command=registerMatch).grid(row=7, column=0, columnspan=2, pady=5)
+
+
+
+def ShowMatchesFrame(root: tk.Tk,db: DataBase, row: int, column: int):
+    frame_liste = ttk.LabelFrame(root, text="Rencontres enregistrées")
+    frame_liste.grid(row=row, column=column, padx=10, pady=10, sticky="ew")
+
+    entry_recherche = ttk.Entry(frame_liste)
+    entry_recherche.pack(pady=5)
+
+    listMatches = tk.Listbox(frame_liste, width=150)
+    listMatches.pack(padx=5, pady=5)
+
+    listBox_matches.append(listMatches)
+    def searchMatches(event):
+        texte = entry_recherche.get()
+        refreshMatches(listMatches,texte)
+
+    entry_recherche.bind("<KeyRelease>", searchMatches)
+
+    def exporter_csv():
+        db.exporter_csv()
+        messagebox.showinfo("Export", "Export CSV terminé : rencontres.csv")
+
+    ttk.Button(frame_liste, text="Exporter en CSV", command=exporter_csv).pack(pady=5)
 
 #region Methods - ranking related
 
