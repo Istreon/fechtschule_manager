@@ -10,14 +10,24 @@ class DataBase :
 
         # == Tables creation if they don't exist ==
         with self.conn:
+            # Club data base
+            self.conn.execute(""" 
+            CREATE TABLE IF NOT EXISTS clubs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT UNIQUE
+            )
+            """)
+
             # "Participants" data base
             self.conn.execute(""" 
             CREATE TABLE IF NOT EXISTS participants (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 nom TEXT,
-                prenom TEXT
+                prenom TEXT,
+                club INTEGER
             )
             """)
+                    
 
             # Fighting style categories data base
             self.conn.execute(""" 
@@ -35,7 +45,7 @@ class DataBase :
                 combattant2 INTEGER,
                 arbitre INTEGER,
                 assesseur INTEGER,
-                categorie TEXT,
+                categorie INTEGER,
                 score1 INTEGER,
                 score2 INTEGER,
                 date TEXT
@@ -46,16 +56,23 @@ class DataBase :
         self.conn.close() # Closes the connection when the object is no longer referenced
 
 #region Methods - Add queries
-    def addParticipant(self, firstname: str, lastname: str):
+    def addClub(self, name: str):
+        try:
+            with self.conn:
+                self.conn.execute("INSERT INTO clubs (name) VALUES (?)", (name,))
+        except sqlite3.IntegrityError:
+            raise AlreadyExists(f"Le club '{name}' existe déjà.")
+    
+    def addParticipant(self, firstname: str, lastname: str, clubID: int):
         with self.conn:
-            self.conn.execute("INSERT INTO participants (prenom, nom) VALUES (?, ?)", (firstname, lastname))
+            self.conn.execute("INSERT INTO participants (prenom, nom, club) VALUES (?, ?, ?)", (firstname, lastname, clubID))
 
     def addCategory(self, name: str):
         try:
             with self.conn:
                 self.conn.execute("INSERT INTO categories (name) VALUES (?)", (name,))
         except sqlite3.IntegrityError:
-            raise CategoryAlreadyExists(f"Le style '{name}' existe déjà.")
+            raise AlreadyExists(f"Le style '{name}' existe déjà.")
 
     def addMatch(self, id1: int, id2: int, arbitre: int, assesseur: int,cat: str, s1: int, s2: int):
         with self.conn:
@@ -66,12 +83,32 @@ class DataBase :
 #endregion
 
 #region Methods - Getters
-    def getParticipants(self):
-        self.cursor.execute("SELECT id, prenom, nom FROM participants ORDER BY nom")
+    def getClubs(self):
+        self.cursor.execute("SELECT id, name FROM clubs ORDER BY name")
         res = self.cursor.fetchall()
 
         # Convert the result of the sql query into a dictionary
-        colonnes = ["id", "prenom", "nom"]
+        colonnes = ["id", "name"]
+        clubs = [dict(zip(colonnes, row)) for row in res]
+
+        return clubs
+    
+    def getClubIdByName(self,name: str):
+        self.cursor.execute("SELECT id FROM clubs WHERE name = ?", (name,))
+        res = self.cursor.fetchone()
+
+        if res:
+            return res[0]
+        else:
+            raise Unknown(f"Le club '{name}' n'existe pas.")
+    
+    
+    def getParticipants(self):
+        self.cursor.execute("SELECT id, prenom, nom, club FROM participants ORDER BY nom")
+        res = self.cursor.fetchall()
+
+        # Convert the result of the sql query into a dictionary
+        colonnes = ["id", "prenom", "nom","club"]
         participants = [dict(zip(colonnes, row)) for row in res]
 
         return participants
@@ -94,7 +131,16 @@ class DataBase :
         if res:
             return res[0]
         else:
-            raise UnknownCategory(f"Le style '{name}' n'existe pas.")
+            raise Unknown(f"Le style '{name}' n'existe pas.")
+        
+    def getCategoryNameByID(self,id: int):
+        self.cursor.execute("SELECT name FROM categories WHERE id = ?", (id,))
+        res = self.cursor.fetchone()
+
+        if res:
+            return res[0]
+        else:
+            raise Unknown(f"Le style ayant pour id '{id}' n'existe pas.")
     
     
     def getMatches(self):
@@ -144,8 +190,8 @@ class DataBase :
 
 
 
-class CategoryAlreadyExists(Exception):
+class AlreadyExists(Exception):
     pass
 
-class UnknownCategory(Exception):
+class Unknown(Exception):
     pass

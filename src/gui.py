@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
-from src.database import DataBase, CategoryAlreadyExists
+from src.database import DataBase, AlreadyExists, Unknown
 from src.ranking import *
 
 #=====================================================#
@@ -13,16 +13,25 @@ comboBox_participants = []
 global comboBox_categories
 comboBox_categories = []
 
+global comboBox_clubs
+comboBox_clubs = []
+
 global listBox_matches
 listBox_matches = []
 
-def refreshParticipantlists(db: DataBase):
+def refreshParticipantLists(db: DataBase):
     p = db.getParticipants()
     participants = [f"{row["id"]} - {row["prenom"]} {row["nom"]}" for row in p]
     for cbp in comboBox_participants:
         cbp["values"] = participants
 
-def refreshCategoriesLists(db: DataBase):
+def refreshClubLists(db: DataBase):
+    c = db.getClubs()
+    clubs = [f"{row["name"]}" for row in c]
+    for cbc in comboBox_clubs:
+        cbc["values"] = clubs
+
+def refreshCategoryLists(db: DataBase):
     categories = db.getCategories()
     cat_list = [f"{row["name"]}" for row in categories]
     for cbc in comboBox_categories:
@@ -37,9 +46,10 @@ def GUI(db: DataBase):
     RankingGUI(root,db,40)
 
 
-    refreshParticipantlists(db)
+    refreshParticipantLists(db)
     refreshMatches(db)
-    refreshCategoriesLists(db)
+    refreshCategoryLists(db)
+    refreshClubLists(db)
 
     root.mainloop()
 
@@ -60,9 +70,10 @@ def refreshMatches(db: DataBase, filtre=""):
 
 def ManagerGUI(root: tk.Tk,db: DataBase):
     AddParticipantFrame(root,db,0,0)
-    AddCategoryFrame(root,db,0,1)
-    AddMatchFrame(root,db,1,0)
-    ShowMatchesFrame(root,db,1,1)
+    AddCategoryFrame(root,db,1,0)
+    AddClubFrame(root,db,2,0)
+    AddMatchFrame(root,db,3,0)
+    ShowMatchesFrame(root,db,4,0)
     return
 
 
@@ -81,19 +92,32 @@ def AddParticipantFrame(root: tk.Tk,db: DataBase, row: int, column: int) :
     entry_nom = ttk.Entry(frame_participant)
     entry_nom.grid(row=1, column=1)
 
+
+    # Club entry
+    ttk.Label(frame_participant, text="Club").grid(row=2, column=0)
+    combo_club = ttk.Combobox(frame_participant)
+    combo_club.grid(row=2, column=1)
+    comboBox_clubs.append(combo_club)
+
     def ajouter_participant():
         prenom = entry_prenom.get()
         nom = entry_nom.get()
-        if prenom and nom:
-            db.addParticipant(prenom,nom)
+        try:
+            club = db.getClubIdByName(combo_club.get())
+        except Unknown as e:
+                messagebox.showinfo("Inconnu", str(e))
+                return
+        if prenom and nom and club:
+            db.addParticipant(prenom,nom,club)
             entry_prenom.delete(0, tk.END)
             entry_nom.delete(0, tk.END)
-            refreshParticipantlists()
-            refreshMatches()
+            combo_club.delete(0, tk.END)
+            refreshParticipantLists(db)
+            refreshMatches(db)
         else:
             messagebox.showwarning("Champs manquants", "Veuillez remplir le prénom et le nom.")
 
-    ttk.Button(frame_participant, text="Ajouter", command=ajouter_participant).grid(row=2, column=0, columnspan=2, pady=5)
+    ttk.Button(frame_participant, text="Ajouter", command=ajouter_participant).grid(row=3, column=0, columnspan=2, pady=5)
 
 
 def AddCategoryFrame(root: tk.Tk,db: DataBase, row: int, column: int):
@@ -112,14 +136,39 @@ def AddCategoryFrame(root: tk.Tk,db: DataBase, row: int, column: int):
         if catName :
             try:
                 db.addCategory(catName)
-            except CategoryAlreadyExists as e:
+            except AlreadyExists as e:
                 messagebox.showinfo("Doublon", str(e))
             entry_catname.delete(0, tk.END)
-            refreshCategoriesLists()
+            refreshCategoryLists(db)
         else:
             messagebox.showwarning("Champs manquants", "Veuillez remplir le nom.")
 
     ttk.Button(frame_category, text="Ajouter", command=addCategory).grid(row=1, column=0, columnspan=2, pady=5)
+
+def AddClubFrame(root: tk.Tk,db: DataBase, row: int, column: int):
+    # Frame creation
+    frame_club = ttk.LabelFrame(root, text="Ajouter un club")
+    frame_club.grid(row=row, column=column, padx=10, pady=10, sticky="ew")
+
+    # Text input creation
+    ttk.Label(frame_club, text="Nom").grid(row=0, column=0)
+    entry_clubname = ttk.Entry(frame_club)
+    entry_clubname.grid(row=0, column=1)
+
+    # Button creation (function and button)
+    def addClub():
+        clubName = entry_clubname.get()
+        if clubName :
+            try:
+                db.addClub(clubName)
+            except AlreadyExists as e:
+                messagebox.showinfo("Doublon", str(e))
+            entry_clubname.delete(0, tk.END)
+            refreshClubLists(db)
+        else:
+            messagebox.showwarning("Champs manquants", "Veuillez remplir le nom.")
+
+    ttk.Button(frame_club, text="Ajouter", command=addClub).grid(row=1, column=0, columnspan=2, pady=5)
 
 
 def AddMatchFrame(root: tk.Tk,db: DataBase, row: int, column: int):
@@ -139,7 +188,7 @@ def AddMatchFrame(root: tk.Tk,db: DataBase, row: int, column: int):
 
     # Category entry
     categories = db.getCategories()
-    categorie_var = tk.StringVar(value=categories[0]["name"])
+    categorie_var = tk.StringVar(value="")
     ttk.Label(frame_rencontre, text="Catégorie").grid(row=4, column=0)
     combo_categorie = ttk.Combobox(frame_rencontre, textvariable=categorie_var)
     combo_categorie.grid(row=4, column=1)
@@ -169,12 +218,16 @@ def AddMatchFrame(root: tk.Tk,db: DataBase, row: int, column: int):
             if len(set(ids)) < 4:
                 messagebox.showerror("Erreur", "Un participant ne peut apparaître qu'une seule fois dans une rencontre.")
                 return
+            
+            if len(cat) < 1:
+                messagebox.showerror("Erreur", "Un style de combat doit être sélectionné.")
+                return
 
             if s1 != 0 and s2 != 0:
                 messagebox.showerror("Erreur", "Un seul score peut être non nul !")
                 return
             
-            db.addMatch(id1, id2, arbitre, assesseur, cat, s1, s2)
+            db.addMatch(id1, id2, arbitre, assesseur, db.getCategoryIdByName(cat), s1, s2)
             messagebox.showinfo("Succès", "Rencontre enregistrée !")
             refreshMatches(db)
         except Exception as e:

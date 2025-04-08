@@ -21,7 +21,7 @@ def rankingByParticipationAsFencer(db: DataBase, cat: str = "all"):
         id = p["id"]
         nbMatches = 0
         for r in matches :
-            if cat!= "all" and r["categorie"]!= cat : 
+            if cat!= "all" and db.getCategoryNameByID(r["categorie"])!= cat : 
                 continue
             if(r["id_combattant1"] == id or r["id_combattant2"] == id) :
                 nbMatches = nbMatches + 1
@@ -46,7 +46,7 @@ def rankingByParticipationInRefereeing(db: DataBase, cat: str = "all"):
         id = p["id"]
         nbMatches = 0
         for r in matches :
-            if cat!= "all" and r["categorie"]!= cat : 
+            if cat!= "all" and db.getCategoryNameByID(r["categorie"])!= cat : 
                 continue
             if(r["id_arbitre"] == id or r["id_assesseur"] == id) :
                 nbMatches = nbMatches + 1
@@ -72,7 +72,7 @@ def rankingByTotalLifePoints(db: DataBase, cat: str = "all"):
         lifePoints = 0
         nbMatches = 0
         for r in matches :
-            if cat!= "all" and r["categorie"]!= cat : 
+            if cat!= "all" and db.getCategoryNameByID(r["categorie"])!= cat : 
                 continue
             if(r["id_combattant1"] == id) :
                 lifePoints = lifePoints + r["score1"]
@@ -103,7 +103,7 @@ def rankingByRatioTotalLifePointsToRencontres(db: DataBase, cat: str = "all"):
         lifePoints = 0
         nbMatches = 0
         for r in matches :
-            if cat!= "all" and r["categorie"]!= cat : 
+            if cat!= "all" and db.getCategoryNameByID(r["categorie"])!= cat : 
                 continue
             if(r["id_combattant1"] == id) :
                 lifePoints = lifePoints + r["score1"]
@@ -136,7 +136,7 @@ def rankingByRatioVictoryToDefeat(db: DataBase, cat: str = "all"):
         victories = 0
         nbMatches = 0
         for r in matches :
-            if cat!= "all" and r["categorie"]!= cat : 
+            if cat!= "all" and db.getCategoryNameByID(r["categorie"])!= cat : 
                 continue
             if(r["id_combattant1"] == id) :
                 nbMatches = nbMatches + 1
