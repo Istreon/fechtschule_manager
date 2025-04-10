@@ -277,7 +277,7 @@ def refreshRanking(listbox: tk.Listbox, data: dict):
                 pos = lastDiffPos
             else :
                 lastDiffPos = count
-            listbox.insert(tk.END, f"{pos} -- {d["prenom"]} {d["nom"]} ({d["score"]})")
+            listbox.insert(tk.END, f"{pos} -- {d["name"]} ({d["score"]})")
             count = count + 1
             lastDiff = d["score"]
 
@@ -316,10 +316,11 @@ def RankingGUI(root: tk.Tk,db: DataBase, width: int=40) :
 
     # Define frame name and the ranking function that will be used
     rankings = [
+    ("Classement individuel : Feshtschule score", rankingByFeshtschuleScore),
     ("Classement participation", rankingByParticipationAsFencer),
     ("Classement arbitrage", rankingByParticipationInRefereeing),
+    ("Classement club : moyenne points de vie", rankingByClubMeanLifePoints),
     ("Classement points de vie", rankingByTotalLifePoints),
-    ("Classement ratio vie/rencontres", rankingByRatioTotalLifePointsToRencontres),
     ("Classement ratio victoire/défaite", rankingByRatioVictoryToDefeat),
     ]
 

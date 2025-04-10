@@ -101,7 +101,15 @@ class DataBase :
             return res[0]
         else:
             raise Unknown(f"Le club '{name}' n'existe pas.")
-    
+        
+    def getClubIdByParticipantId(self,pId: int):
+        self.cursor.execute("SELECT c.id FROM clubs c JOIN participants p ON c.id = p.club WHERE p.id = ?", (pId,))
+        res = self.cursor.fetchone()
+
+        if res:
+            return res[0]
+        else:
+            raise Unknown(f"L'id de participant '{pId}' n'existe pas.")
     
     def getParticipants(self):
         self.cursor.execute("SELECT id, prenom, nom, club FROM participants ORDER BY nom")
