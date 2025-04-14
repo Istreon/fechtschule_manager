@@ -64,23 +64,34 @@ def refreshMatches(db: DataBase, filtre=""):
         l.delete(0, tk.END)
         rencontres = db.getMatches()
         for row in rencontres:
-            ligne = f"{row["date"][:16]} - {row["nom_combattant1"]} ({row["score1"]}) vs {row["nom_combattant2"]} ({row["score2"]}) [{row["categorie"]}] - Arbitre: {row["nom_arbitre"]}, Assesseur: {row["nom_assesseur"]}"
+            catname = db.getCategoryNameByID(row["categorie"])
+            ligne = f"{row["date"][:16]} - {row["nom_combattant1"]} ({row["score1"]}) vs {row["nom_combattant2"]} ({row["score2"]}) [{catname}] - Arbitre: {row["nom_arbitre"]}, Assesseur: {row["nom_assesseur"]}"
             if filtre.lower() in ligne.lower():
                 l.insert(tk.END, ligne)
 
 def ManagerGUI(root: tk.Tk,db: DataBase):
-    AddParticipantFrame(root,db,0,0)
-    AddCategoryFrame(root,db,1,0)
-    AddClubFrame(root,db,2,0)
-    AddMatchFrame(root,db,3,0)
-    ShowMatchesFrame(root,db,4,0)
+    AddFrame(root,db,0,0)
+    MatchesFrame(root,db,1,0)
     return
+
+def MatchesFrame(root: tk.Tk,db: DataBase, row: int, column: int) :
+    frame_matches = ttk.LabelFrame(root, text="Rencontres")
+    frame_matches.grid(row=row, column=column, padx=10, pady=10, sticky="ew")
+    AddMatchFrame(frame_matches,db,0,0)
+    ShowMatchesFrame(frame_matches,db,0,1)
+
+def AddFrame(root: tk.Tk,db: DataBase, row: int, column: int):
+    frame_add = ttk.LabelFrame(root, text="Ajouter")
+    frame_add.grid(row=row, column=column, padx=10, pady=10, sticky="ew")
+    AddParticipantFrame(frame_add,db,0,0)
+    AddCategoryFrame(frame_add,db,0,1)
+    AddClubFrame(frame_add,db,0,2)
 
 
 def AddParticipantFrame(root: tk.Tk,db: DataBase, row: int, column: int) :
     # Frame creation
     frame_participant = ttk.LabelFrame(root, text="Ajouter un participant")
-    frame_participant.grid(row=row, column=column, padx=10, pady=10, sticky="ew")
+    frame_participant.grid(row=row, column=column, padx=10, pady=10, sticky="ns")
 
     # Text input creation
     ttk.Label(frame_participant, text="Prénom").grid(row=0, column=0)
@@ -123,7 +134,7 @@ def AddParticipantFrame(root: tk.Tk,db: DataBase, row: int, column: int) :
 def AddCategoryFrame(root: tk.Tk,db: DataBase, row: int, column: int):
     # Frame creation
     frame_category = ttk.LabelFrame(root, text="Ajouter un style de combat")
-    frame_category.grid(row=row, column=column, padx=10, pady=10, sticky="ew")
+    frame_category.grid(row=row, column=column, padx=10, pady=10, sticky="ns")
 
     # Text input creation
     ttk.Label(frame_category, text="Nom").grid(row=0, column=0)
@@ -148,7 +159,7 @@ def AddCategoryFrame(root: tk.Tk,db: DataBase, row: int, column: int):
 def AddClubFrame(root: tk.Tk,db: DataBase, row: int, column: int):
     # Frame creation
     frame_club = ttk.LabelFrame(root, text="Ajouter un club")
-    frame_club.grid(row=row, column=column, padx=10, pady=10, sticky="ew")
+    frame_club.grid(row=row, column=column, padx=10, pady=10, sticky="ns")
 
     # Text input creation
     ttk.Label(frame_club, text="Nom").grid(row=0, column=0)
@@ -174,7 +185,7 @@ def AddClubFrame(root: tk.Tk,db: DataBase, row: int, column: int):
 def AddMatchFrame(root: tk.Tk,db: DataBase, row: int, column: int):
     # Frame creation
     frame_rencontre = ttk.LabelFrame(root, text="Enregistrer une rencontre")
-    frame_rencontre.grid(row=row, column=column, padx=10, pady=10, sticky="ew")
+    frame_rencontre.grid(row=row, column=column, padx=10, pady=10,sticky="ns")
 
     # Participants entries
     requiredParticipants = ["Combattant 1","Combattant 2","Arbitre","Assesseur"]
@@ -187,7 +198,6 @@ def AddMatchFrame(root: tk.Tk,db: DataBase, row: int, column: int):
         i = i + 1
 
     # Category entry
-    categories = db.getCategories()
     categorie_var = tk.StringVar(value="")
     ttk.Label(frame_rencontre, text="Catégorie").grid(row=4, column=0)
     combo_categorie = ttk.Combobox(frame_rencontre, textvariable=categorie_var)
@@ -310,6 +320,14 @@ def RankingGUI(root: tk.Tk,db: DataBase, width: int=40) :
     combo_categories.bind("<<ComboboxSelected>>", on_categorie_change)
 
 
+    #kjsdnvjvn
+    frame_categoryMatches = ttk.LabelFrame(win_ranking, text="Nombre de combats par catégorie")
+    frame_categoryMatches.grid(row=0, column=1, padx=10, pady=10, sticky="ew")
+
+    list_categoryMatches = tk.Listbox(frame_categoryMatches, width=width, height=10)
+    list_categoryMatches.pack(padx=5, pady=5)
+
+
     # Create frames with listboxes showing results
     rankingFrames = []
     rankingListboxes = []
@@ -339,6 +357,7 @@ def RankingGUI(root: tk.Tk,db: DataBase, width: int=40) :
         for i in range(len(rankings)):
             _ , func = rankings[i]
             refreshRanking(rankingListboxes[i], func(db,cat_filter))
+        refreshRanking(list_categoryMatches, rankingCategoriesByMatchesCount(db))
         win_ranking.after(2000, autoRefresh)  # toutes les 2 secondes
 
     autoRefresh()  # Lancer la boucle
