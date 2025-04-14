@@ -93,21 +93,30 @@ def AddParticipantFrame(root: tk.Tk,db: DataBase, row: int, column: int) :
     frame_participant = ttk.LabelFrame(root, text="Ajouter un participant")
     frame_participant.grid(row=row, column=column, padx=10, pady=10, sticky="ns")
 
+
+    frame_participant.rowconfigure(0,weight=1)
+    frame_participant.rowconfigure(1,weight=1)
+    frame_participant.rowconfigure(2,weight=1)
+    frame_participant.rowconfigure(3,weight=1)
+
+    frame_participant.columnconfigure(0,weight=1)
+    frame_participant.columnconfigure(0,weight=3)
+
     # Text input creation
-    ttk.Label(frame_participant, text="Prénom").grid(row=0, column=0)
+    ttk.Label(frame_participant, text="Prénom").grid(row=0, column=0,sticky=tk.EW)
     entry_prenom = ttk.Entry(frame_participant)
-    entry_prenom.grid(row=0, column=1)
+    entry_prenom.grid(row=0, column=1,sticky=tk.EW)
 
     # Button creation (function and button)
-    ttk.Label(frame_participant, text="Nom").grid(row=1, column=0)
+    ttk.Label(frame_participant, text="Nom").grid(row=1, column=0,sticky=tk.EW)
     entry_nom = ttk.Entry(frame_participant)
-    entry_nom.grid(row=1, column=1)
+    entry_nom.grid(row=1, column=1,sticky=tk.EW)
 
 
     # Club entry
-    ttk.Label(frame_participant, text="Club").grid(row=2, column=0)
+    ttk.Label(frame_participant, text="Club").grid(row=2, column=0,sticky=tk.EW)
     combo_club = ttk.Combobox(frame_participant)
-    combo_club.grid(row=2, column=1)
+    combo_club.grid(row=2, column=1,sticky=tk.EW)
     comboBox_clubs.append(combo_club)
 
     def ajouter_participant():
@@ -128,7 +137,7 @@ def AddParticipantFrame(root: tk.Tk,db: DataBase, row: int, column: int) :
         else:
             messagebox.showwarning("Champs manquants", "Veuillez remplir le prénom et le nom.")
 
-    ttk.Button(frame_participant, text="Ajouter", command=ajouter_participant).grid(row=3, column=0, columnspan=2, pady=5)
+    ttk.Button(frame_participant, text="Ajouter", command=ajouter_participant).grid(row=3, column=0, columnspan=2, pady=5,sticky=tk.E)
 
 
 def AddCategoryFrame(root: tk.Tk,db: DataBase, row: int, column: int):
@@ -136,10 +145,15 @@ def AddCategoryFrame(root: tk.Tk,db: DataBase, row: int, column: int):
     frame_category = ttk.LabelFrame(root, text="Ajouter un style de combat")
     frame_category.grid(row=row, column=column, padx=10, pady=10, sticky="ns")
 
+    frame_category.rowconfigure(0,weight=1)
+    frame_category.rowconfigure(1,weight=1)
+    frame_category.columnconfigure(0,weight=1)
+    frame_category.columnconfigure(1,weight=3)
+
     # Text input creation
-    ttk.Label(frame_category, text="Nom").grid(row=0, column=0)
+    ttk.Label(frame_category, text="Nom").grid(row=0, column=0,sticky=tk.EW)
     entry_catname = ttk.Entry(frame_category)
-    entry_catname.grid(row=0, column=1)
+    entry_catname.grid(row=0, column=1,sticky=tk.EW)
 
     # Button creation (function and button)
     def addCategory():
@@ -154,17 +168,22 @@ def AddCategoryFrame(root: tk.Tk,db: DataBase, row: int, column: int):
         else:
             messagebox.showwarning("Champs manquants", "Veuillez remplir le nom.")
 
-    ttk.Button(frame_category, text="Ajouter", command=addCategory).grid(row=1, column=0, columnspan=2, pady=5)
+    ttk.Button(frame_category, text="Ajouter", command=addCategory).grid(row=1, column=0, columnspan=2, pady=5,sticky=tk.SE)
 
 def AddClubFrame(root: tk.Tk,db: DataBase, row: int, column: int):
     # Frame creation
     frame_club = ttk.LabelFrame(root, text="Ajouter un club")
     frame_club.grid(row=row, column=column, padx=10, pady=10, sticky="ns")
 
+    frame_club.rowconfigure(0,weight=1)
+    frame_club.rowconfigure(1,weight=1)
+    frame_club.columnconfigure(0,weight=1)
+    frame_club.columnconfigure(1,weight=3)
+
     # Text input creation
-    ttk.Label(frame_club, text="Nom").grid(row=0, column=0)
+    ttk.Label(frame_club, text="Nom").grid(row=0, column=0,sticky=tk.EW)
     entry_clubname = ttk.Entry(frame_club)
-    entry_clubname.grid(row=0, column=1)
+    entry_clubname.grid(row=0, column=1,sticky=tk.EW)
 
     # Button creation (function and button)
     def addClub():
@@ -179,7 +198,7 @@ def AddClubFrame(root: tk.Tk,db: DataBase, row: int, column: int):
         else:
             messagebox.showwarning("Champs manquants", "Veuillez remplir le nom.")
 
-    ttk.Button(frame_club, text="Ajouter", command=addClub).grid(row=1, column=0, columnspan=2, pady=5)
+    ttk.Button(frame_club, text="Ajouter", command=addClub).grid(row=1, column=0, columnspan=2, pady=5,sticky=tk.SE)
 
 
 def AddMatchFrame(root: tk.Tk,db: DataBase, row: int, column: int):
@@ -187,32 +206,39 @@ def AddMatchFrame(root: tk.Tk,db: DataBase, row: int, column: int):
     frame_rencontre = ttk.LabelFrame(root, text="Enregistrer une rencontre")
     frame_rencontre.grid(row=row, column=column, padx=10, pady=10,sticky="ns")
 
+    for i in range(8):
+        frame_rencontre.rowconfigure(i,weight=1)
+        
+    frame_rencontre.columnconfigure(0,weight=1)
+    frame_rencontre.columnconfigure(1,weight=3)
+
+
     # Participants entries
     requiredParticipants = ["Combattant 1","Combattant 2","Arbitre","Assesseur"]
     i = 0
     for s in requiredParticipants :
-        ttk.Label(frame_rencontre, text=s).grid(row=i, column=0)
+        ttk.Label(frame_rencontre, text=s).grid(row=i, column=0,sticky=tk.EW)
         combo = ttk.Combobox(frame_rencontre, textvariable=tk.StringVar())
-        combo.grid(row=i, column=1)
+        combo.grid(row=i, column=1,sticky=tk.EW)
         comboBox_participants.append(combo)
         i = i + 1
 
     # Category entry
     categorie_var = tk.StringVar(value="")
-    ttk.Label(frame_rencontre, text="Catégorie").grid(row=4, column=0)
+    ttk.Label(frame_rencontre, text="Catégorie").grid(row=4, column=0,sticky=tk.EW)
     combo_categorie = ttk.Combobox(frame_rencontre, textvariable=categorie_var)
-    combo_categorie.grid(row=4, column=1)
+    combo_categorie.grid(row=4, column=1,sticky=tk.EW)
     comboBox_categories.append(combo_categorie)
     # Score entries
     score1_var = tk.IntVar(value=0)
-    ttk.Label(frame_rencontre, text="Point de vie Combattant 1").grid(row=5, column=0)
+    ttk.Label(frame_rencontre, text="Point de vie Combattant 1").grid(row=5, column=0,sticky=tk.EW)
     spin_score1 = ttk.Spinbox(frame_rencontre, from_=0, to=6, textvariable=score1_var)
-    spin_score1.grid(row=5, column=1)
+    spin_score1.grid(row=5, column=1,sticky=tk.EW)
 
     score2_var = tk.IntVar(value=0)
-    ttk.Label(frame_rencontre, text="Point de vie Combattant 2").grid(row=6, column=0)
+    ttk.Label(frame_rencontre, text="Point de vie Combattant 2").grid(row=6, column=0,sticky=tk.EW)
     spin_score2 = ttk.Spinbox(frame_rencontre, from_=0, to=6, textvariable=score2_var)
-    spin_score2.grid(row=6, column=1)
+    spin_score2.grid(row=6, column=1,sticky=tk.EW)
 
     def registerMatch():
         try:
@@ -243,7 +269,7 @@ def AddMatchFrame(root: tk.Tk,db: DataBase, row: int, column: int):
         except Exception as e:
             messagebox.showerror("Erreur", str(e))
 
-    ttk.Button(frame_rencontre, text="Enregistrer", command=registerMatch).grid(row=7, column=0, columnspan=2, pady=5)
+    ttk.Button(frame_rencontre, text="Enregistrer", command=registerMatch).grid(row=7, column=0, columnspan=2, pady=5,sticky=tk.SE)
 
 
 
