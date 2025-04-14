@@ -124,7 +124,7 @@ def rankingByTotalLifePoints(db: DataBase, cat: str = "all"):
 
 # - Ensuite, le critère suivant est le ratio entre le le total de point et le nombre de rencontre
 
-def rankingByRatioTotalLifePointsToRencontres(db: DataBase, cat: str = "all"):
+def rankingByMeanLifePoints(db: DataBase, cat: str = "all"):
     participants=db.getParticipants()
     matches=db.getMatches()
 
@@ -221,6 +221,29 @@ def rankingByClubMeanLifePoints(db: DataBase, cat: str = "all"):
             ratio = lifePoints / nbMatches
             res = {"id": id, "name": c["name"], "score": truncate_float(ratio)}
             results.append(res)
+
+    sorted_results = sorted(results, key=lambda x: x["score"], reverse=True)
+
+    return sorted_results
+
+
+
+
+def rankingCategoriesByMatchesCount(db: DataBase, cat: str = "all"):
+    categories=db.getCategories()
+    matches=db.getMatches()
+
+    results = []
+
+    for c in categories :
+        id = c["id"]
+        nbMatches = 0
+        for m in matches :
+            if(int(m["categorie"]) == int(id)) :
+                nbMatches = nbMatches + 1
+
+        res = {"id": id, "name": c["name"], "score": nbMatches}
+        results.append(res)
 
     sorted_results = sorted(results, key=lambda x: x["score"], reverse=True)
 
