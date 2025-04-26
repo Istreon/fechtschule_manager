@@ -178,6 +178,17 @@ class DataBase :
         return matches
 #endregion
 
+
+    def have_already_fought(self, id1, id2):
+        self.cursor.execute("""
+            SELECT 1 FROM matches
+            WHERE (combattant1 = ? AND combattant2 = ?)
+            OR (combattant1 = ? AND combattant2 = ?)
+            LIMIT 1
+        """, (id1, id2, id2, id1))
+        return self.cursor.fetchone() is not None
+
+
     
     def exporter_csv(self):
         with open("matches.csv", "w", newline="", encoding="utf-8") as f:

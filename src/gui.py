@@ -73,7 +73,7 @@ def refreshMatches(db: DataBase, filtre=""):
         rencontres = db.getMatches()
         for row in rencontres:
             catname = db.getCategoryNameByID(row["categorie"])
-            ligne = f"{row["date"][:16]} - {row["nom_combattant1"]} ({row["score1"]}) vs {row["nom_combattant2"]} ({row["score2"]}) [{catname}] - Arbitre: {row["nom_arbitre"]}, Assesseur: {row["nom_assesseur"]}"
+            ligne = f"{row["date"][:16]} - [{catname}] --- {row["nom_combattant1"]} ({row["score1"]}) vs {row["nom_combattant2"]} ({row["score2"]}) --- Arbitre: {row["nom_arbitre"]}, Assesseur: {row["nom_assesseur"]}"
             if filtre.lower() in ligne.lower():
                 l.insert(tk.END, ligne)
 
@@ -272,6 +272,10 @@ def AddMatchFrame(root: tk.Tk,db: DataBase, row: int, column: int):
                 messagebox.showerror("Erreur", "Un participant ne peut apparaître qu'une seule fois dans une rencontre.")
                 return
             
+            if db.have_already_fought(id1,id2) :
+                messagebox.showerror("Erreur", "Ces participants se sont déjà affrontés.")
+                return
+
             if len(cat) < 1:
                 messagebox.showerror("Erreur", "Un style de combat doit être sélectionné.")
                 return
