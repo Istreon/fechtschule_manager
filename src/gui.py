@@ -13,6 +13,9 @@ comboBox_participants = []
 global comboBox_categories
 comboBox_categories = []
 
+global comboBox_category_types
+comboBox_category_types = []
+
 global comboBox_clubs
 comboBox_clubs = []
 
@@ -34,8 +37,13 @@ def refreshClubLists(db: DataBase):
 def refreshCategoryLists(db: DataBase):
     categories = db.getCategories()
     cat_list = [f"{row["name"]}" for row in categories]
-    for cbc in comboBox_categories:
-        cbc["value"] = cat_list
+    cat_list_all = cat_list.copy()
+    cat_list_all.insert(0, "all")
+    for idx in range(len(comboBox_categories)):
+        if(comboBox_category_types[idx]) :
+            comboBox_categories[idx]["value"] = cat_list_all
+        else :
+            comboBox_categories[idx]["value"] = cat_list
 
 def GUI(db: DataBase):
     root = tk.Tk()
@@ -229,6 +237,7 @@ def AddMatchFrame(root: tk.Tk,db: DataBase, row: int, column: int):
     combo_categorie = ttk.Combobox(frame_rencontre, textvariable=categorie_var)
     combo_categorie.grid(row=4, column=1,sticky=tk.EW)
     comboBox_categories.append(combo_categorie)
+    comboBox_category_types.append(False)
     # Score entries
     score1_var = tk.IntVar(value=0)
     ttk.Label(frame_rencontre, text="Point de vie Combattant 1").grid(row=5, column=0,sticky=tk.EW)
@@ -286,7 +295,7 @@ def ShowMatchesFrame(root: tk.Tk,db: DataBase, row: int, column: int):
     listBox_matches.append(listMatches)
     def searchMatches(event):
         texte = entry_recherche.get()
-        refreshMatches(listMatches,texte)
+        refreshMatches(db,texte)
 
     entry_recherche.bind("<KeyRelease>", searchMatches)
 
@@ -345,8 +354,11 @@ def RankingGUI(root: tk.Tk,db: DataBase, width: int=40) :
     combo_categories.grid(row=0, column=1)
     combo_categories.bind("<<ComboboxSelected>>", on_categorie_change)
 
+    comboBox_categories.append(combo_categories)
+    comboBox_category_types.append(True)
 
-    #kjsdnvjvn
+
+    # Frame showing the count of matches per category
     frame_categoryMatches = ttk.LabelFrame(win_ranking, text="Nombre de combats par catégorie")
     frame_categoryMatches.grid(row=0, column=1, padx=10, pady=10, sticky="ew")
 
