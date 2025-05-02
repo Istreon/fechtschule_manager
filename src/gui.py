@@ -290,7 +290,7 @@ def AddMatchFrame(root: tk.Tk,db: DataBase, row: int, column: int):
         except Exception as e:
             messagebox.showerror("Erreur", str(e))
 
-    ttk.Button(frame_rencontre, text="Enregistrer", command=registerMatch).grid(row=9, column=0, columnspan=2, pady=5,sticky=tk.SE)
+    ttk.Button(frame_rencontre, text="Enregistrer", command=registerMatch).grid(row=9, column=3, columnspan=2, pady=5,sticky=tk.SE)
 
 
 
