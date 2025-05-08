@@ -238,6 +238,19 @@ class DataBase :
             "score1", "score2", "categorie", "date"
         ]
         return dict(zip(colonnes, row))
+    
+    def get_matches_count(self) -> int:
+        self.cursor.execute("SELECT COUNT(*) FROM matches;")
+        return self.cursor.fetchone()[0]
+    
+    def get_participants_count(self) -> int:
+        self.cursor.execute("SELECT COUNT(*) FROM participants;")
+        return self.cursor.fetchone()[0]
+    
+    def get_clubs_count(self) -> int:
+        self.cursor.execute("SELECT COUNT(*) FROM clubs;")
+        return self.cursor.fetchone()[0]
+
 #endregion
 
 
@@ -249,25 +262,6 @@ class DataBase :
             LIMIT 1
         """, (id1, id2, id2, id1))
         return self.cursor.fetchone() is not None
-
-
-    
-    def exporter_csv(self):
-        with open("matches.csv", "w", newline="", encoding="utf-8") as f:
-            writer = csv.writer(f)
-            writer.writerow(["Date", "Combattant 1", "Score 1", "Combattant 2", "Score 2", "Catégorie", "Arbitre", "Assesseur"])
-            self.cursor.execute("""
-                SELECT p1.prenom || ' ' || p1.nom, p2.prenom || ' ' || p2.nom,
-                    arb.prenom || ' ' || arb.nom, ass.prenom || ' ' || ass.nom,
-                    r.score1, r.score2, r.categorie, r.date
-                FROM matches r
-                JOIN participants p1 ON r.combattant1 = p1.id
-                JOIN participants p2 ON r.combattant2 = p2.id
-                JOIN participants arb ON r.arbitre = arb.id
-                JOIN participants ass ON r.assesseur = ass.id
-            """)
-            for row in self.cursor.fetchall():
-                writer.writerow([row[7], row[0], row[4], row[1], row[5], row[6], row[2], row[3]])
 
 
 

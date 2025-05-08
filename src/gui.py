@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from src.database import DataBase, AlreadyExists, Unknown
 from src.ranking import *
+from src.export import *
 
 #=====================================================#
 #======================== GUI ========================#
@@ -324,7 +325,7 @@ def ShowMatchesFrame(root: tk.Tk,db: DataBase, row: int, column: int):
     entry_recherche.bind("<KeyRelease>", searchMatches)
 
     def exporter_csv():
-        db.exporter_csv()
+        exporter_matches_csv(db)
         messagebox.showinfo("Export", "Export CSV terminé : rencontres.csv")
 
     ttk.Button(frame_liste, text="Exporter en CSV", command=exporter_csv).pack(pady=5)
@@ -515,6 +516,12 @@ def RankingGUI(root: tk.Tk,db: DataBase, width: int=40) :
     list_categoryMatches = tk.Listbox(frame_categoryMatches, width=width, height=10)
     list_categoryMatches.pack(padx=5, pady=5)
 
+    def export_summary_and_info() :
+        export_summary(db)
+        messagebox.showinfo("Succès", "Résumé du tournoi exporté !")
+
+    ttk.Button(win_ranking, text="Export résumé", command=export_summary_and_info).grid(row=2, column=0, columnspan=2, pady=5,sticky=tk.SW)
+    
 
     # Create frames with listboxes showing results
     rankingFrames = []

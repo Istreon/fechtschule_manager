@@ -1,0 +1,35 @@
+=====================COMPTE RENDU GENERAL=====================
+Lors de ce tournoi, 13 participants provenant de 1 clubs différents se sont affrontés au cours de 22 duels.
+
+
+Participants ayant le plus de participation à l'arbitrage (3 premiers, ordre décroissant)
+3- Xavier Riva-Pommarede (avec 5 participations)
+2- Sylvain Borderieux (avec 6 participations)
+1- Aymeric Hénard (avec 7 participations)
+
+
+=====================COMBATS DE GALA=====================
+Nombre de combats par catégorie d'armes, et combattants pour le gala :
+3- Épée de côté (avec 1 combats)--> Sylvain Borderieux (1.38) Amaury Creach (0.0) 
+2- Dussack (avec 4 combats)--> Hugues Étienne (4.62) Ewan Guilloux (2.19) 
+1- Épée longue (avec 17 combats)--> Jonathan Grattepanche (6.59) Guillaume Gaborel (6.43) 
+
+
+=====================CLASSEMENT FINAL=====================
+Classement des clubs par point de vie moyen :
+1- BAMHE (avec en moyenne 1.68 points de vie)
+
+
+Classement général des duellistes (pv/nbCombats * log(nbCombats + 1)) :
+1- Jonathan Grattepanche (avec un score de 6.59)
+2- Guillaume Gaborel (avec un score de 6.43)
+3- Évangéline Guillon (avec un score de 3.94)
+4- Hugues Étienne (avec un score de 3.58)
+5- Dorian Le Coz (avec un score de 2.77)
+6- Matthieu Roubien (avec un score de 2.5)
+7- Ewan Guilloux (avec un score de 1.6)
+8- Pierre Lorrain (avec un score de 1.38)
+9- Edgar Fize (avec un score de 1.2)
+10- Sylvain Borderieux (avec un score de 0.92)
+11- Amaury Creach (avec un score de 0.0)
+11- Xavier Riva-Pommarede (avec un score de 0.0)
