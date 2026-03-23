@@ -82,6 +82,30 @@ class DataBase :
             """, (id1, id2, arbitre, assesseur, cat, s1, s2, datetime.datetime.now().isoformat()))
 #endregion
 
+#region Methods - Add queries
+
+    def updateMatch(self, match_id: int, id1: int, id2: int, arbitre: int, assesseur: int, cat: str, s1: int, s2: int):
+        with self.conn:
+            # Vérifier si le match existe
+            self.cursor.execute("SELECT 1 FROM matches WHERE id = ?", (match_id,))
+            if not self.cursor.fetchone():
+                raise ValueError(f"Aucun match trouvé avec l'ID {match_id}")
+
+            # Effectuer la mise à jour
+            self.cursor.execute("""
+                UPDATE matches
+                SET combattant1 = ?, 
+                    combattant2 = ?, 
+                    arbitre = ?, 
+                    assesseur = ?, 
+                    categorie = ?, 
+                    score1 = ?, 
+                    score2 = ? 
+                WHERE id = ?
+            """, (id1, id2, arbitre, assesseur, cat, s1, s2, match_id))
+
+#endregion
+
 #region Methods - Getters
     def getClubs(self):
         self.cursor.execute("SELECT id, name FROM clubs ORDER BY name")
@@ -121,6 +145,16 @@ class DataBase :
 
         return participants
    
+    def getParticipantByID(self,pId: int) :
+        self.cursor.execute("SELECT id, prenom, nom, club FROM participants WHERE id = ?", (pId,))
+        res = self.cursor.fetchone()
+
+        if res is None:
+            return None  # Aucun participant trouvé
+
+        colonnes = ["id", "prenom", "nom", "club"]
+        participant = dict(zip(colonnes, res))
+        return participant
 
     def getCategories(self):
         self.cursor.execute("SELECT id, name FROM categories ORDER BY name")
@@ -176,25 +210,58 @@ class DataBase :
         ]
         matches = [dict(zip(colonnes, row)) for row in res]
         return matches
+    
+
+    def getMatchByID(self, id: int):
+        self.cursor.execute("""
+            SELECT r.id, p1.id, p1.prenom || ' ' || p1.nom, p2.id, p2.prenom || ' ' || p2.nom,
+                arb.id, arb.prenom || ' ' || arb.nom, ass.id, ass.prenom || ' ' || ass.nom,
+                r.score1, r.score2, r.categorie, r.date
+            FROM matches r
+            JOIN participants p1 ON r.combattant1 = p1.id
+            JOIN participants p2 ON r.combattant2 = p2.id
+            JOIN participants arb ON r.arbitre = arb.id
+            JOIN participants ass ON r.assesseur = ass.id
+            WHERE r.id = ?
+        """, (id,))
+        
+        row = self.cursor.fetchone()
+        if row is None:
+            return None  # Aucun match trouvé
+
+        colonnes = [
+            "id_match", 
+            "id_combattant1", "nom_combattant1",
+            "id_combattant2", "nom_combattant2",
+            "id_arbitre", "nom_arbitre",
+            "id_assesseur", "nom_assesseur",
+            "score1", "score2", "categorie", "date"
+        ]
+        return dict(zip(colonnes, row))
+    
+    def get_matches_count(self) -> int:
+        self.cursor.execute("SELECT COUNT(*) FROM matches;")
+        return self.cursor.fetchone()[0]
+    
+    def get_participants_count(self) -> int:
+        self.cursor.execute("SELECT COUNT(*) FROM participants;")
+        return self.cursor.fetchone()[0]
+    
+    def get_clubs_count(self) -> int:
+        self.cursor.execute("SELECT COUNT(*) FROM clubs;")
+        return self.cursor.fetchone()[0]
+
 #endregion
 
-    
-    def exporter_csv(self):
-        with open("matches.csv", "w", newline="", encoding="utf-8") as f:
-            writer = csv.writer(f)
-            writer.writerow(["Date", "Combattant 1", "Score 1", "Combattant 2", "Score 2", "Catégorie", "Arbitre", "Assesseur"])
-            self.cursor.execute("""
-                SELECT p1.prenom || ' ' || p1.nom, p2.prenom || ' ' || p2.nom,
-                    arb.prenom || ' ' || arb.nom, ass.prenom || ' ' || ass.nom,
-                    r.score1, r.score2, r.categorie, r.date
-                FROM matches r
-                JOIN participants p1 ON r.combattant1 = p1.id
-                JOIN participants p2 ON r.combattant2 = p2.id
-                JOIN participants arb ON r.arbitre = arb.id
-                JOIN participants ass ON r.assesseur = ass.id
-            """)
-            for row in self.cursor.fetchall():
-                writer.writerow([row[7], row[0], row[4], row[1], row[5], row[6], row[2], row[3]])
+
+    def have_already_fought(self, id1, id2):
+        self.cursor.execute("""
+            SELECT 1 FROM matches
+            WHERE (combattant1 = ? AND combattant2 = ?)
+            OR (combattant1 = ? AND combattant2 = ?)
+            LIMIT 1
+        """, (id1, id2, id2, id1))
+        return self.cursor.fetchone() is not None
 
 
 
