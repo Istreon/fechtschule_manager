@@ -11,6 +11,28 @@ def exporter_matches_csv(db: DataBase):
             writer.writerow([row["date"], row["nom_combattant1"], row["score1"], row["nom_combattant2"], row["score2"], row["categorie"], row["nom_arbitre"], row["nom_assesseur"]])
 
 
+def export_ranking(db: DataBase) :
+     with open("ranking.csv", "w", newline="", encoding="utf-8") as f:
+        categories = db.getCategories()
+        main_ranking = rankingByFeshtschuleScore(db)  
+        categories_ranking = []
+        for c in categories :
+            ranking = rankingByFeshtschuleScore(db,c["name"])  
+            if len(ranking) > 0 :
+                categories_ranking.append((c["name"],ranking))
+        writer = csv.writer(f)
+        head = ["Participant", "Toutes armes confondues"]
+        for cr in categories_ranking :
+            head.append(cr[0])
+        writer.writerow(head)
+
+        for mr in main_ranking:
+            row =  [mr["name"], mr["score"]]
+            for cr in categories_ranking :
+                score = next((item["score"] for item in cr[1] if int(item["id"]) == int(mr["id"])), None)
+                row.append(score)
+            writer.writerow(row)
+
 
 def export_summary(db: DataBase) :
     with open("summary.txt", "w", newline="", encoding="utf-8") as f:

@@ -518,6 +518,7 @@ def RankingGUI(root: tk.Tk,db: DataBase, width: int=40) :
 
     def export_summary_and_info() :
         export_summary(db)
+        export_ranking(db)
         messagebox.showinfo("Succès", "Résumé du tournoi exporté !")
 
     ttk.Button(win_ranking, text="Export résumé", command=export_summary_and_info).grid(row=2, column=0, columnspan=2, pady=5,sticky=tk.SW)
