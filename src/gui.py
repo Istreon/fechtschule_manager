@@ -2,26 +2,33 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from src.database import DataBase, AlreadyExists, Unknown
 from src.ranking import *
+from src.export import *
 
 #=====================================================#
 #======================== GUI ========================#
 #=====================================================#
 
 global comboBox_participants
-comboBox_participants = []
+comboBox_participants: ttk.Combobox = []
 
 global comboBox_categories
-comboBox_categories = []
+comboBox_categories: ttk.Combobox = []
+
+global comboBox_category_types
+comboBox_category_types: ttk.Combobox = []
 
 global comboBox_clubs
-comboBox_clubs = []
+comboBox_clubs: ttk.Combobox = []
+
+global comboBox_match_id
+comboBox_match_id: ttk.Combobox = []
 
 global listBox_matches
 listBox_matches = []
 
 def refreshParticipantLists(db: DataBase):
     p = db.getParticipants()
-    participants = [f"{row["id"]} - {row["prenom"]} {row["nom"]}" for row in p]
+    participants = [f"{row["nom"]} {row["prenom"]} - {row["id"]}" for row in p]
     for cbp in comboBox_participants:
         cbp["values"] = participants
 
@@ -34,8 +41,19 @@ def refreshClubLists(db: DataBase):
 def refreshCategoryLists(db: DataBase):
     categories = db.getCategories()
     cat_list = [f"{row["name"]}" for row in categories]
-    for cbc in comboBox_categories:
-        cbc["value"] = cat_list
+    cat_list_all = cat_list.copy()
+    cat_list_all.insert(0, "all")
+    for idx in range(len(comboBox_categories)):
+        if(comboBox_category_types[idx]) :
+            comboBox_categories[idx]["value"] = cat_list_all
+        else :
+            comboBox_categories[idx]["value"] = cat_list
+
+def refreshMatchId(db: DataBase):
+    m = db.getMatches()
+    matches_id = [f"{row["id_match"]}" for row in m]
+    for cbm in comboBox_match_id :
+        cbm["values"] = matches_id
 
 def GUI(db: DataBase):
     root = tk.Tk()
@@ -50,6 +68,7 @@ def GUI(db: DataBase):
     refreshMatches(db)
     refreshCategoryLists(db)
     refreshClubLists(db)
+    refreshMatchId(db)
 
     root.mainloop()
 
@@ -65,7 +84,7 @@ def refreshMatches(db: DataBase, filtre=""):
         rencontres = db.getMatches()
         for row in rencontres:
             catname = db.getCategoryNameByID(row["categorie"])
-            ligne = f"{row["date"][:16]} - {row["nom_combattant1"]} ({row["score1"]}) vs {row["nom_combattant2"]} ({row["score2"]}) [{catname}] - Arbitre: {row["nom_arbitre"]}, Assesseur: {row["nom_assesseur"]}"
+            ligne = f"{row["id_match"]} - {row["date"][:16]} - [{catname}] --- {row["nom_combattant1"]} ({row["score1"]}) vs {row["nom_combattant2"]} ({row["score2"]}) --- Arbitre: {row["nom_arbitre"]}, Assesseur: {row["nom_assesseur"]}"
             if filtre.lower() in ligne.lower():
                 l.insert(tk.END, ligne)
 
@@ -79,6 +98,7 @@ def MatchesFrame(root: tk.Tk,db: DataBase, row: int, column: int) :
     frame_matches.grid(row=row, column=column, padx=10, pady=10, sticky="ew")
     AddMatchFrame(frame_matches,db,0,0)
     ShowMatchesFrame(frame_matches,db,0,1)
+    UpdateMatchFrame(frame_matches,db,0,2)
 
 def AddFrame(root: tk.Tk,db: DataBase, row: int, column: int):
     frame_add = ttk.LabelFrame(root, text="Ajouter")
@@ -206,46 +226,55 @@ def AddMatchFrame(root: tk.Tk,db: DataBase, row: int, column: int):
     frame_rencontre = ttk.LabelFrame(root, text="Enregistrer une rencontre")
     frame_rencontre.grid(row=row, column=column, padx=10, pady=10,sticky="ns")
 
-    for i in range(8):
+    for i in range(10):
         frame_rencontre.rowconfigure(i,weight=1)
         
     frame_rencontre.columnconfigure(0,weight=1)
     frame_rencontre.columnconfigure(1,weight=3)
+    frame_rencontre.columnconfigure(2,weight=1)
+    frame_rencontre.columnconfigure(3,weight=1)
+
+
+    # Category entry
+    categorie_var = tk.StringVar(value="")
+    ttk.Label(frame_rencontre, text="Catégorie").grid(row=0, column=0,sticky=tk.EW)
+    combo_categorie = ttk.Combobox(frame_rencontre, textvariable=categorie_var)
+    combo_categorie.grid(row=0, column=1,sticky=tk.EW)
+    comboBox_categories.append(combo_categorie)
+    comboBox_category_types.append(False)
 
 
     # Participants entries
     requiredParticipants = ["Combattant 1","Combattant 2","Arbitre","Assesseur"]
-    i = 0
+    i = 2
+    cut = 4
     for s in requiredParticipants :
         ttk.Label(frame_rencontre, text=s).grid(row=i, column=0,sticky=tk.EW)
         combo = ttk.Combobox(frame_rencontre, textvariable=tk.StringVar())
         combo.grid(row=i, column=1,sticky=tk.EW)
         comboBox_participants.append(combo)
         i = i + 1
+        if i == cut :
+            i = i + 1
 
-    # Category entry
-    categorie_var = tk.StringVar(value="")
-    ttk.Label(frame_rencontre, text="Catégorie").grid(row=4, column=0,sticky=tk.EW)
-    combo_categorie = ttk.Combobox(frame_rencontre, textvariable=categorie_var)
-    combo_categorie.grid(row=4, column=1,sticky=tk.EW)
-    comboBox_categories.append(combo_categorie)
+
     # Score entries
     score1_var = tk.IntVar(value=0)
-    ttk.Label(frame_rencontre, text="Point de vie Combattant 1").grid(row=5, column=0,sticky=tk.EW)
-    spin_score1 = ttk.Spinbox(frame_rencontre, from_=0, to=6, textvariable=score1_var)
-    spin_score1.grid(row=5, column=1,sticky=tk.EW)
+    ttk.Label(frame_rencontre, text="PV").grid(row=2, column=2,sticky=tk.EW)
+    spin_score1 = ttk.Spinbox(frame_rencontre, from_=0, to=6, textvariable=score1_var, width=2)
+    spin_score1.grid(row=2, column=3,sticky=tk.EW)
 
     score2_var = tk.IntVar(value=0)
-    ttk.Label(frame_rencontre, text="Point de vie Combattant 2").grid(row=6, column=0,sticky=tk.EW)
-    spin_score2 = ttk.Spinbox(frame_rencontre, from_=0, to=6, textvariable=score2_var)
-    spin_score2.grid(row=6, column=1,sticky=tk.EW)
+    ttk.Label(frame_rencontre, text="PV").grid(row=3, column=2,sticky=tk.EW)
+    spin_score2 = ttk.Spinbox(frame_rencontre, from_=0, to=6, textvariable=score2_var,width=2)
+    spin_score2.grid(row=3, column=3,sticky=tk.EW)
 
     def registerMatch():
         try:
-            id1 = int(comboBox_participants[0].get().split(" - ")[0])
-            id2 = int(comboBox_participants[1].get().split(" - ")[0])
-            arbitre = int(comboBox_participants[2].get().split(" - ")[0])
-            assesseur = int(comboBox_participants[3].get().split(" - ")[0])
+            id1 = int(comboBox_participants[0].get().split(" - ")[-1])
+            id2 = int(comboBox_participants[1].get().split(" - ")[-1])
+            arbitre = int(comboBox_participants[2].get().split(" - ")[-1])
+            assesseur = int(comboBox_participants[3].get().split(" - ")[-1])
             cat = categorie_var.get()
             s1 = score1_var.get()
             s2 = score2_var.get()
@@ -255,6 +284,10 @@ def AddMatchFrame(root: tk.Tk,db: DataBase, row: int, column: int):
                 messagebox.showerror("Erreur", "Un participant ne peut apparaître qu'une seule fois dans une rencontre.")
                 return
             
+            if db.have_already_fought(id1,id2) :
+                messagebox.showerror("Erreur", "Ces participants se sont déjà affrontés.")
+                return
+
             if len(cat) < 1:
                 messagebox.showerror("Erreur", "Un style de combat doit être sélectionné.")
                 return
@@ -266,10 +299,11 @@ def AddMatchFrame(root: tk.Tk,db: DataBase, row: int, column: int):
             db.addMatch(id1, id2, arbitre, assesseur, db.getCategoryIdByName(cat), s1, s2)
             messagebox.showinfo("Succès", "Rencontre enregistrée !")
             refreshMatches(db)
+            refreshMatchId(db)
         except Exception as e:
             messagebox.showerror("Erreur", str(e))
 
-    ttk.Button(frame_rencontre, text="Enregistrer", command=registerMatch).grid(row=7, column=0, columnspan=2, pady=5,sticky=tk.SE)
+    ttk.Button(frame_rencontre, text="Enregistrer", command=registerMatch).grid(row=9, column=3, columnspan=2, pady=5,sticky=tk.SE)
 
 
 
@@ -286,15 +320,141 @@ def ShowMatchesFrame(root: tk.Tk,db: DataBase, row: int, column: int):
     listBox_matches.append(listMatches)
     def searchMatches(event):
         texte = entry_recherche.get()
-        refreshMatches(listMatches,texte)
+        refreshMatches(db,texte)
 
     entry_recherche.bind("<KeyRelease>", searchMatches)
 
     def exporter_csv():
-        db.exporter_csv()
+        exporter_matches_csv(db)
         messagebox.showinfo("Export", "Export CSV terminé : rencontres.csv")
 
     ttk.Button(frame_liste, text="Exporter en CSV", command=exporter_csv).pack(pady=5)
+
+
+
+def UpdateMatchFrame(root: tk.Tk,db: DataBase, row: int, column: int):
+    # Frame creation
+    frame_rencontre = ttk.LabelFrame(root, text="Modifier une rencontre")
+    frame_rencontre.grid(row=row, column=column, padx=10, pady=10,sticky="ns")
+
+    for i in range(10):
+        frame_rencontre.rowconfigure(i,weight=1)
+        
+    frame_rencontre.columnconfigure(0,weight=1)
+    frame_rencontre.columnconfigure(1,weight=3)
+    frame_rencontre.columnconfigure(2,weight=1)
+    frame_rencontre.columnconfigure(3,weight=1)
+
+
+
+    # Match entry
+    match_var = tk.StringVar(value="")
+    ttk.Label(frame_rencontre, text="Match ID").grid(row=0, column=0,sticky=tk.EW)
+    combo_match_id = ttk.Combobox(frame_rencontre, textvariable=match_var)
+    combo_match_id.grid(row=0, column=1,sticky=tk.EW)
+    comboBox_match_id.append(combo_match_id)
+
+    # Category entry
+    categorie_var = tk.StringVar(value="")
+    ttk.Label(frame_rencontre, text="Catégorie").grid(row=2, column=0,sticky=tk.EW)
+    combo_categorie = ttk.Combobox(frame_rencontre, textvariable=categorie_var)
+    combo_categorie.grid(row=2, column=1,sticky=tk.EW)
+    comboBox_categories.append(combo_categorie)
+    comboBox_category_types.append(False)
+
+
+    # Participants entries
+    requiredParticipants = ["Combattant 1","Combattant 2","Arbitre","Assesseur"]
+    i = 4
+    cut = 6
+    participants_vars = []
+    for s in requiredParticipants :
+        p = tk.StringVar()
+        participants_vars.append(p)
+        ttk.Label(frame_rencontre, text=s).grid(row=i, column=0,sticky=tk.EW)
+        combo = ttk.Combobox(frame_rencontre, textvariable=p)
+        combo.grid(row=i, column=1,sticky=tk.EW)
+        comboBox_participants.append(combo)
+        i = i + 1
+        if i == cut :
+            i = i + 1
+
+    # Score entries
+    score1_var = tk.IntVar(value=0)
+    ttk.Label(frame_rencontre, text="PV").grid(row=4, column=2,sticky=tk.EW)
+    spin_score1 = ttk.Spinbox(frame_rencontre, from_=0, to=6, textvariable=score1_var, width=2)
+    spin_score1.grid(row=4, column=3,sticky=tk.EW)
+
+    score2_var = tk.IntVar(value=0)
+    ttk.Label(frame_rencontre, text="PV").grid(row=5, column=2,sticky=tk.EW)
+    spin_score2 = ttk.Spinbox(frame_rencontre, from_=0, to=6, textvariable=score2_var,width=2)
+    spin_score2.grid(row=5, column=3,sticky=tk.EW)
+
+    def on_match_id_change(event) :
+        match_id = int(match_var.get()) 
+        m = db.getMatchByID(match_id)
+
+        c1 = db.getParticipantByID(m["id_combattant1"])
+        val_c1 = f"{c1["nom"]} {c1["prenom"]} - {m["id_combattant1"]}"
+        participants_vars[0].set(val_c1)
+
+        c2 = db.getParticipantByID(m["id_combattant2"])
+        val_c2 = f"{c2["nom"]} {c2["prenom"]} - {m["id_combattant2"]}"
+        participants_vars[1].set(val_c2)
+
+        ar = db.getParticipantByID(m["id_arbitre"])
+        val_ar = f"{ar["nom"]} {ar["prenom"]} - {m["id_arbitre"]}"
+        participants_vars[2].set(val_ar)
+
+        asse = db.getParticipantByID(m["id_assesseur"])
+        val_asse = f"{asse["nom"]} {asse["prenom"]} - {m["id_assesseur"]}"
+        participants_vars[3].set(val_asse)
+
+        score1_var.set(m["score1"])
+        score2_var.set(m["score2"])
+
+        categorie_var.set(db.getCategoryNameByID(m["categorie"]))
+        pass
+
+    combo_match_id.bind("<<ComboboxSelected>>", on_match_id_change)
+
+    def updateMatch():
+        try:
+            match_id = int(match_var.get()) 
+            id1 = int(participants_vars[0].get().split(" - ")[-1])
+            id2 = int(participants_vars[1].get().split(" - ")[-1])
+            arbitre = int(participants_vars[2].get().split(" - ")[-1])
+            assesseur = int(participants_vars[3].get().split(" - ")[-1])
+            cat = categorie_var.get()
+            s1 = score1_var.get()
+            s2 = score2_var.get()
+
+            ids = [id1, id2, arbitre, assesseur]
+            if len(set(ids)) < 4:
+                messagebox.showerror("Erreur", "Un participant ne peut apparaître qu'une seule fois dans une rencontre.")
+                return
+
+            if len(cat) < 1:
+                messagebox.showerror("Erreur", "Un style de combat doit être sélectionné.")
+                return
+
+            if s1 != 0 and s2 != 0:
+                messagebox.showerror("Erreur", "Un seul score peut être non nul !")
+                return
+            
+            db.updateMatch(match_id,id1, id2, arbitre, assesseur, db.getCategoryIdByName(cat), s1, s2)
+            messagebox.showinfo("Succès", "Rencontre mise à jour !")
+            
+        except Exception as e:
+            messagebox.showerror("Erreur", str(e))
+        refreshMatches(db)
+    ttk.Button(frame_rencontre, text="Modifier", command=updateMatch).grid(row=9, column=3, columnspan=2, pady=5,sticky=tk.SE)
+
+
+
+
+
+
 
 #region Methods - ranking related
 
@@ -345,14 +505,24 @@ def RankingGUI(root: tk.Tk,db: DataBase, width: int=40) :
     combo_categories.grid(row=0, column=1)
     combo_categories.bind("<<ComboboxSelected>>", on_categorie_change)
 
+    comboBox_categories.append(combo_categories)
+    comboBox_category_types.append(True)
 
-    #kjsdnvjvn
+
+    # Frame showing the count of matches per category
     frame_categoryMatches = ttk.LabelFrame(win_ranking, text="Nombre de combats par catégorie")
     frame_categoryMatches.grid(row=0, column=1, padx=10, pady=10, sticky="ew")
 
     list_categoryMatches = tk.Listbox(frame_categoryMatches, width=width, height=10)
     list_categoryMatches.pack(padx=5, pady=5)
 
+    def export_summary_and_info() :
+        export_summary(db)
+        export_ranking(db)
+        messagebox.showinfo("Succès", "Résumé du tournoi exporté !")
+
+    ttk.Button(win_ranking, text="Export résumé", command=export_summary_and_info).grid(row=2, column=0, columnspan=2, pady=5,sticky=tk.SW)
+    
 
     # Create frames with listboxes showing results
     rankingFrames = []
