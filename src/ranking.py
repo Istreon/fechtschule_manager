@@ -10,7 +10,7 @@ def truncate_float(value: float, decimals: int = 2) -> float:
 
 
 
-def rankingByFeshtschuleScore(db: DataBase, cat: str = "all"): #Score final = (PV_totaux / Nb_combats) × log(Nb_combats + 1)
+def rankingByFechtschuleScore(db: DataBase, cat: str = "all"): #Score final = (PV_totaux / Nb_combats) × log(Nb_combats + 1)
     participants=db.getParticipants()
     matches=db.getMatches()
 
@@ -34,6 +34,62 @@ def rankingByFeshtschuleScore(db: DataBase, cat: str = "all"): #Score final = (P
         score = 0
         if(nbMatches > 0 ) : 
             score = (lifePoints / nbMatches) * math.log(nbMatches + 1)
+            res = {"id": id, "name": p["prenom"] + ' ' + p["nom"], "score": truncate_float(score)}
+            results.append(res)
+
+    sorted_results = sorted(results, key=lambda x: x["score"], reverse=True)
+
+    return sorted_results
+
+
+
+def rankingByFechtmeisterScore(db: DataBase, cat: str = "all"): #Unused second arg
+    participants=db.getParticipants()
+    matches=db.getMatches()
+
+    results = []
+    alpha = 0.25 # importance of balance
+    beta = 0.10 # importance of the number of weapons
+
+    for p in participants :
+        compteurs = {}
+        id = p["id"]
+        lifePoints = 0
+        nbMatches = 0
+        for r in matches :
+
+            if id in (r["id_combattant1"], r["id_combattant2"]):
+                categorie = r["categorie"] 
+        
+                if categorie in compteurs:
+                    compteurs[categorie] += 1
+                else:
+                    compteurs[categorie] = 1
+
+
+            if(r["id_combattant1"] == id) :
+                lifePoints = lifePoints + r["score1"]
+                nbMatches = nbMatches + 1
+                
+            if(r["id_combattant2"] == id) :
+                lifePoints = lifePoints + r["score2"]
+                nbMatches = nbMatches + 1
+
+        score = 0
+        if(nbMatches > 0 ) : 
+            W = len(compteurs)
+            D = 0.0
+
+            for a in compteurs :
+                pro = compteurs[a] / W
+                D += pro * math.log(pro)
+
+            if W > 1:
+                D = - (D / math.log(W))
+            else:
+                D = 0
+
+            score = (lifePoints / nbMatches) * math.log(nbMatches + 1) * (1 + alpha * D +  beta * math.log(W+1))
             res = {"id": id, "name": p["prenom"] + ' ' + p["nom"], "score": truncate_float(score)}
             results.append(res)
 

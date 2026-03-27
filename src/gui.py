@@ -530,7 +530,8 @@ def RankingGUI(root: tk.Tk,db: DataBase, width: int=40) :
 
     # Define frame name and the ranking function that will be used
     rankings = [
-    ("Classement individuel : Feshtschule score", rankingByFeshtschuleScore),
+    ("Classement individuel : Fechtschule score", rankingByFechtschuleScore),
+    ("Classement individuel : Fechtmeister score", rankingByFechtmeisterScore),
     ("Classement participation", rankingByParticipationAsFencer),
     ("Classement arbitrage", rankingByParticipationInRefereeing),
     ("Classement club : moyenne points de vie", rankingByClubMeanLifePoints),
