@@ -3,6 +3,7 @@ from tkinter import ttk, messagebox
 from src.database import DataBase, AlreadyExists, Unknown
 from src.ranking import *
 from src.export import *
+from src.config import *
 
 #=====================================================#
 #======================== GUI ========================#
@@ -261,12 +262,12 @@ def AddMatchFrame(root: tk.Tk,db: DataBase, row: int, column: int):
     # Score entries
     score1_var = tk.IntVar(value=0)
     ttk.Label(frame_rencontre, text="PV").grid(row=2, column=2,sticky=tk.EW)
-    spin_score1 = ttk.Spinbox(frame_rencontre, from_=0, to=6, textvariable=score1_var, width=2)
+    spin_score1 = ttk.Spinbox(frame_rencontre, from_=0, to=MAX_HP, textvariable=score1_var, width=2)
     spin_score1.grid(row=2, column=3,sticky=tk.EW)
 
     score2_var = tk.IntVar(value=0)
     ttk.Label(frame_rencontre, text="PV").grid(row=3, column=2,sticky=tk.EW)
-    spin_score2 = ttk.Spinbox(frame_rencontre, from_=0, to=6, textvariable=score2_var,width=2)
+    spin_score2 = ttk.Spinbox(frame_rencontre, from_=0, to=MAX_HP, textvariable=score2_var,width=2)
     spin_score2.grid(row=3, column=3,sticky=tk.EW)
 
     def registerMatch():
@@ -382,12 +383,12 @@ def UpdateMatchFrame(root: tk.Tk,db: DataBase, row: int, column: int):
     # Score entries
     score1_var = tk.IntVar(value=0)
     ttk.Label(frame_rencontre, text="PV").grid(row=4, column=2,sticky=tk.EW)
-    spin_score1 = ttk.Spinbox(frame_rencontre, from_=0, to=6, textvariable=score1_var, width=2)
+    spin_score1 = ttk.Spinbox(frame_rencontre, from_=0, to=MAX_HP, textvariable=score1_var, width=2)
     spin_score1.grid(row=4, column=3,sticky=tk.EW)
 
     score2_var = tk.IntVar(value=0)
     ttk.Label(frame_rencontre, text="PV").grid(row=5, column=2,sticky=tk.EW)
-    spin_score2 = ttk.Spinbox(frame_rencontre, from_=0, to=6, textvariable=score2_var,width=2)
+    spin_score2 = ttk.Spinbox(frame_rencontre, from_=0, to=MAX_HP, textvariable=score2_var,width=2)
     spin_score2.grid(row=5, column=3,sticky=tk.EW)
 
     def on_match_id_change(event) :
