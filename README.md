@@ -3,13 +3,13 @@
 A tool to manage the Brest AMHE annual tournament, the Fechtschule.<br>
 It allows adding participants, clubs and weapons and to register matches. Registered matches can be modified in case of human error.
 <br>
-<img src="./Documentation/registering_interface.png">
+![registering interface](./documentation/registering_interface.png)
 <br>
 
 Rankings are shown in real time, and can be exported in .csv files, as well as the list of matches.<br>
 A generated summary of the tournament can be exported in a .txt file.
 <br>
-<img src="./Documentation/ranking_interface.png">
+![ranking interface](./documentation/ranking_interface.png)
 <br>
 
 ## Using the virtual environment

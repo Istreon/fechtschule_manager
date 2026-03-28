@@ -14,10 +14,10 @@ def exporter_matches_csv(db: DataBase):
 def export_ranking(db: DataBase) :
      with open("ranking.csv", "w", newline="", encoding="utf-8") as f:
         categories = db.getCategories()
-        main_ranking = rankingByFeshtschuleScore(db)  
+        main_ranking = rankingByFechtschuleScore(db)  
         categories_ranking = []
         for c in categories :
-            ranking = rankingByFeshtschuleScore(db,c["name"])  
+            ranking = rankingByFechtschuleScore(db,c["name"])  
             if len(ranking) > 0 :
                 categories_ranking.append((c["name"],ranking))
         writer = csv.writer(f)
@@ -82,7 +82,7 @@ def export_summary(db: DataBase) :
         max = min(4,len(cat_matches_count))
         for i in range(max) :
             k = max - 1 - i
-            cat_scores = rankingByFeshtschuleScore(db,cat_matches_count[k]["name"])
+            cat_scores = rankingByFechtschuleScore(db,cat_matches_count[k]["name"])
             if cat_matches_count[k]["score"] == 0 :
                 continue
             if len(cat_scores) < 2 :
@@ -132,7 +132,7 @@ def export_summary(db: DataBase) :
 
         # Clubs ranking
         f.write("\n\nClassement général des duellistes (pv/nbCombats * log(nbCombats + 1)) :\n")
-        general_ranking = rankingByFeshtschuleScore(db)
+        general_ranking = rankingByFechtschuleScore(db)
         count = 1
         lastDiffPos = 1
         lastDiff = -1
