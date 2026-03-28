@@ -81,7 +81,7 @@ def rankingByFechtmeisterScore(db: DataBase, cat: str = "all"): #Unused second a
             D = 0.0
 
             for a in compteurs :
-                pro = compteurs[a] / W
+                pro = compteurs[a] / nbMatches
                 D += pro * math.log(pro)
 
             if W > 1:
