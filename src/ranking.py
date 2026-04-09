@@ -43,54 +43,68 @@ def rankingByFechtschuleScore(db: DataBase, cat: str = "all"): #Score final = (P
 
 
 
-def rankingByFechtmeisterScore(db: DataBase, cat: str = "all"): #Unused second arg
-    participants=db.getParticipants()
-    matches=db.getMatches()
+
+
+def rankingByFechtmeisterScore(db: DataBase, cat: str = "all"):
+    participants = db.getParticipants()
+    matches = db.getMatches()
+    nbCategories = len(db.getCategories())
 
     results = []
-    alpha = 0.25 # importance of balance
-    beta = 0.10 # importance of the number of weapons
+    alpha = 0.25
 
-    for p in participants :
+    for p in participants:
         compteurs = {}
         id = p["id"]
         lifePoints = 0
         nbMatches = 0
-        for r in matches :
+
+        for r in matches:
 
             if id in (r["id_combattant1"], r["id_combattant2"]):
-                categorie = r["categorie"] 
-        
+                categorie = r["categorie"]
+
                 if categorie in compteurs:
                     compteurs[categorie] += 1
                 else:
                     compteurs[categorie] = 1
 
+            if r["id_combattant1"] == id:
+                lifePoints += r["score1"]
+                nbMatches += 1
 
-            if(r["id_combattant1"] == id) :
-                lifePoints = lifePoints + r["score1"]
-                nbMatches = nbMatches + 1
-                
-            if(r["id_combattant2"] == id) :
-                lifePoints = lifePoints + r["score2"]
-                nbMatches = nbMatches + 1
+            if r["id_combattant2"] == id:
+                lifePoints += r["score2"]
+                nbMatches += 1
 
         score = 0
-        if(nbMatches > 0 ) : 
-            W = len(compteurs)
-            D = 0.0
 
-            for a in compteurs :
-                pro = compteurs[a] / W
-                D += pro * math.log(pro)
+        if nbMatches > 0:
+            total = sum(compteurs.values())  # total combats
 
-            if W > 1:
-                D = - (D / math.log(W))
+            # --- Entropy ---
+            H = 0.0
+            for a in compteurs:
+                pro = compteurs[a] / total 
+                if pro > 0:
+                    H += pro * math.log(pro)
+
+            H = -H  # entropy positive
+
+            # --- normalisation avec W_max ---
+            if nbCategories > 1:
+                D = H / math.log(nbCategories)
             else:
                 D = 0
 
-            score = (lifePoints / nbMatches) * math.log(nbMatches + 1) * (1 + alpha * D +  beta * math.log(W+1))
-            res = {"id": id, "name": p["prenom"] + ' ' + p["nom"], "score": truncate_float(score)}
+            # --- Final score ---
+            score = (lifePoints / nbMatches) * math.log(nbMatches + 1) * (1 + alpha * D)
+
+            res = {
+                "id": id,
+                "name": p["prenom"] + ' ' + p["nom"],
+                "score": truncate_float(score)
+            }
             results.append(res)
 
     sorted_results = sorted(results, key=lambda x: x["score"], reverse=True)
