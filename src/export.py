@@ -11,26 +11,47 @@ def exporter_matches_csv(db: DataBase):
             writer.writerow([row["date"], row["nom_combattant1"], row["score1"], row["nom_combattant2"], row["score2"], row["categorie"], row["nom_arbitre"], row["nom_assesseur"]])
 
 
-def export_ranking(db: DataBase) :
-     with open("ranking.csv", "w", newline="", encoding="utf-8") as f:
+
+def export_ranking(db: DataBase):
+    with open("ranking.csv", "w", newline="", encoding="utf-8") as f:
         categories = db.getCategories()
-        main_ranking = rankingByFechtschuleScore(db)  
+        main_ranking = rankingByFechtschuleScore(db)
+        secondary_ranking = rankingByFechtmeisterScore(db)
+
         categories_ranking = []
-        for c in categories :
-            ranking = rankingByFechtschuleScore(db,c["name"])  
-            if len(ranking) > 0 :
-                categories_ranking.append((c["name"],ranking))
+        for c in categories:
+            ranking = rankingByFechtschuleScore(db, c["name"])
+            if len(ranking) > 0:
+                categories_ranking.append((c["name"], ranking))
+
         writer = csv.writer(f)
+
+        # Header
         head = ["Participant", "Toutes armes confondues"]
-        for cr in categories_ranking :
+        for cr in categories_ranking:
             head.append(cr[0])
+        head.append("Fechtmeister") 
         writer.writerow(head)
 
+        # Lignes
         for mr in main_ranking:
-            row =  [mr["name"], mr["score"]]
-            for cr in categories_ranking :
-                score = next((item["score"] for item in cr[1] if int(item["id"]) == int(mr["id"])), None)
+            row = [mr["name"], mr["score"]]
+
+            # scores par catégorie
+            for cr in categories_ranking:
+                score = next(
+                    (item["score"] for item in cr[1] if int(item["id"]) == int(mr["id"])),
+                    None
+                )
                 row.append(score)
+
+            # score secondaire (Fechtmeister)
+            secondary_score = next(
+                (item["score"] for item in secondary_ranking if int(item["id"]) == int(mr["id"])),
+                None
+            )
+            row.append(secondary_score)
+
             writer.writerow(row)
 
 
