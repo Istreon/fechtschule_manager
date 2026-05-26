@@ -8,7 +8,7 @@ def exporter_matches_csv(db: DataBase):
         writer.writerow(["Date", "Combattant 1", "Score 1", "Combattant 2", "Score 2", "Catégorie", "Arbitre", "Assesseur"])
         matches = db.getMatches()
         for row in matches:
-            writer.writerow([row["date"], row["nom_combattant1"], row["score1"], row["nom_combattant2"], row["score2"], row["categorie"], row["nom_arbitre"], row["nom_assesseur"]])
+            writer.writerow([row["date"], row["nom_combattant1"], row["score1"], row["nom_combattant2"], row["score2"], db.getCategoryNameByID(row["categorie"]), row["nom_arbitre"], row["nom_assesseur"]])
 
 
 
